@@ -686,3 +686,9 @@ tr.row-aging td { background: color-mix(in srgb, var(--warning) 9%, transparent)
 }
 .mc-variant-table .num-cell { text-align: right; }
 .mc-variant-table .cm-del { padding: 2px 8px; }
+
+/* ---- Request import preview (task 9.11) ---- */
+.imp-list { margin: 0 0 var(--space-2); padding-left: 1.2rem; max-height: 180px; overflow-y: auto; font-size: var(--fs-sm); }
+.imp-list .imp-ok { color: var(--success); }
+.imp-list .imp-dup { color: var(--warning); }
+.imp-list .imp-err { color: var(--danger); }

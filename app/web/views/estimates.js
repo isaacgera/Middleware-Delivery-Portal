@@ -8,6 +8,7 @@
  * figure); the grid shows the per-line computed values the API returns.
  */
 import { api, ApiError } from '../api.js';
+import { isAdmin } from '../session.js';
 import { exportRequestPdf, previewRequestPdf, exportRequestsTablePdf } from './pdf-export.js';
 
 // Component codes -> display label (WILDFLY shows as WFY, per Isaac's catalogue labels).
@@ -142,6 +143,7 @@ async function renderList(view) {
             <button type="button" role="menuitem" id="exp-json">JSON</button>
           </div>
         </div>
+        ${isAdmin() ? '<button type="button" class="btn-ghost" id="est-import">Import…</button>' : ''}
         <button type="button" class="btn-primary" id="est-new">Add Request</button>
       </div>
     </div>
@@ -160,6 +162,8 @@ async function renderList(view) {
   `;
 
   view.querySelector('#est-new').addEventListener('click', () => openNewRequestDialog(view));
+  const importBtn = view.querySelector('#est-import');
+  if (importBtn) importBtn.addEventListener('click', () => openImportDialog(view));
 
   // Export menu (CSV / PDF) — exports the CURRENT filtered selection (whole set, not just the page).
   wireMenu(view.querySelector('#exp-menu'), view.querySelector('#exp-toggle'), view.querySelector('#exp-list'));
@@ -488,6 +492,95 @@ function openNewRequestDialog(view) {
       errEl.style.display = 'block';
     }
   });
+}
+
+// ---- Import Requests dialog (admin only, task 9.11) ----
+
+function openImportDialog(view) {
+  const host = document.createElement('div');
+  host.className = 'est-modal-backdrop';
+  host.innerHTML = `
+    <div class="card est-modal est-modal-wide" role="dialog" aria-modal="true" aria-labelledby="imp-title">
+      <h2 id="imp-title" style="margin-top:0;">Import requests</h2>
+      <p class="muted" style="margin-top:0;">Load a Requests <strong>JSON export</strong> (the file produced by
+        Export ▾ → JSON). Requests are created as <strong>headers only</strong> (no line items), attributed to you,
+        pinned to the active Menu Card. Existing JIRA references are skipped. You'll see a preview before anything is saved.</p>
+      <label class="field"><span>Export file (.json)</span><input id="imp-file" type="file" accept=".json,application/json" /></label>
+      <div id="imp-error" class="form-error" role="alert" hidden style="margin-top:var(--space-2);"></div>
+      <div id="imp-preview" style="margin-top:var(--space-3);"></div>
+      <div class="est-modal-actions">
+        <button type="button" class="btn-ghost" id="imp-cancel">Cancel</button>
+        <button type="button" class="btn-primary" id="imp-commit" disabled>Import</button>
+      </div>
+    </div>`;
+  view.appendChild(host);
+  const close = trapFocus(host, host.querySelector('[role="dialog"]'), () => host.remove());
+  host.querySelector('#imp-cancel').addEventListener('click', close);
+  host.addEventListener('click', (e) => { if (e.target === host) close(); });
+
+  const errEl = host.querySelector('#imp-error');
+  const previewEl = host.querySelector('#imp-preview');
+  const commitBtn = host.querySelector('#imp-commit');
+  let parsedPayload = null; // the envelope, held for commit
+
+  const fail = (msg) => { errEl.textContent = msg; errEl.hidden = false; };
+
+  host.querySelector('#imp-file').addEventListener('change', async (ev) => {
+    errEl.hidden = true; previewEl.innerHTML = ''; commitBtn.disabled = true; parsedPayload = null;
+    const file = ev.target.files && ev.target.files[0];
+    if (!file) return;
+    let payload;
+    try {
+      payload = JSON.parse(await file.text());
+    } catch {
+      fail('That file is not valid JSON.'); return;
+    }
+    try {
+      const result = await api.post('/api/estimates/import?mode=preview', payload);
+      parsedPayload = payload;
+      renderImportPreview(previewEl, result);
+      commitBtn.disabled = result.counts.importable === 0;
+    } catch (e) {
+      fail(e instanceof ApiError ? e.message : 'Could not read that export.');
+    }
+  });
+
+  commitBtn.addEventListener('click', async () => {
+    if (!parsedPayload) return;
+    commitBtn.disabled = true; commitBtn.textContent = 'Importing…';
+    try {
+      const result = await api.post('/api/estimates/import?mode=commit', parsedPayload);
+      announce(`Imported ${result.counts.created} request(s).`);
+      previewEl.innerHTML = `<div class="card" style="background:var(--surface-2);">
+        <p style="margin:0;"><span class="badge ok">Imported</span>
+        Created <strong>${result.counts.created}</strong>, skipped ${result.counts.skipped} duplicate(s),
+        ${result.counts.errors} error(s).</p></div>`;
+      commitBtn.textContent = 'Done'; 
+      // refresh the list behind the modal
+      await loadList(view);
+    } catch (e) {
+      fail(e instanceof ApiError ? e.message : 'Import failed.');
+      commitBtn.disabled = false; commitBtn.textContent = 'Import';
+    }
+  });
+}
+
+function renderImportPreview(el, r) {
+  const c = r.counts;
+  const list = (rows, cls) => rows.slice(0, 50).map((x) =>
+    `<li class="${cls}">${esc(x.jira)}${x.reason ? ` — <span class="muted">${esc(x.reason)}</span>` : ''}</li>`).join('');
+  el.innerHTML = `
+    <div class="card" style="background:var(--surface-2);">
+      <p style="margin-top:0;">${r.activeVersion
+        ? `Will import into active Menu Card <strong>${esc(r.activeVersion.label)}</strong> (${esc(r.activeVersion.financialYear)}).`
+        : '<span class="badge warn">No active Menu Card</span> Activate one before importing.'}</p>
+      <p style="margin:0;"><strong>${c.importable}</strong> to import ·
+        <strong>${c.duplicates}</strong> skipped (duplicate) ·
+        <strong>${c.errors}</strong> error(s) · of ${c.total} total.</p>
+      ${r.importable.length ? `<p class="muted" style="margin:.6rem 0 .2rem;">Importable:</p><ul class="imp-list">${list(r.importable, 'imp-ok')}</ul>` : ''}
+      ${r.duplicates.length ? `<p class="muted" style="margin:.6rem 0 .2rem;">Skipped (duplicates):</p><ul class="imp-list">${list(r.duplicates, 'imp-dup')}</ul>` : ''}
+      ${r.errors.length ? `<p class="muted" style="margin:.6rem 0 .2rem;">Errors:</p><ul class="imp-list">${list(r.errors, 'imp-err')}</ul>` : ''}
+    </div>`;
 }
 
 // ============================================================
