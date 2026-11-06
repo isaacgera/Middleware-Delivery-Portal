@@ -1,5 +1,6 @@
 /** Menu Cards admin view — upload/import an .xlsx OR create on screen; list, activate, archive. */
 import { api, ApiError } from '../api.js';
+import { trapFocus } from './modal-util.js';
 
 function esc(s) {
   return String(s ?? '').replace(/[&<>"']/g, (c) =>
@@ -40,36 +41,46 @@ function statusBadge(status) {
 export async function renderMenuCards(view) {
   view.innerHTML = `
     <h1>Menu Cards</h1>
-    <p class="muted">Upload an approved Menu Card workbook (.xlsx), review the parsed summary,
-      then activate it. Exactly one version is active at a time.</p>
+    <p class="muted">Create a Menu Card on screen, or upload an approved workbook (.xlsx) — review,
+      then activate. Exactly one version is active at a time.</p>
 
-    <div class="card" style="margin-top: var(--space-5); max-width: 640px;">
-      <h2 style="margin-top:0;">Import a Menu Card</h2>
-      <form id="mc-form">
-        <label class="field">
-          <span>Workbook (.xlsx)</span>
-          <input id="mc-file" type="file" accept=".xlsx" required />
-        </label>
-        <label class="field">
-          <span>Financial year (optional — e.g. FY27)</span>
-          <input id="mc-fy" type="text" placeholder="FY27" />
-        </label>
-        <div id="mc-error" class="form-error" role="alert" hidden></div>
-        <button class="btn-primary" type="submit" id="mc-submit">Upload &amp; parse</button>
-      </form>
-      <div id="mc-summary" style="margin-top: var(--space-4);"></div>
-    </div>
-
-    <div class="card" style="margin-top: var(--space-5);">
-      <div class="mc-create-head">
-        <h2 style="margin:0;">…or create a Menu Card on screen</h2>
-        <button type="button" class="btn-ghost" id="mc-create-toggle"
-                aria-expanded="false" aria-controls="mc-create-panel">Create new</button>
+    <div class="mc-top-grid">
+      <div class="card mc-top-card">
+        <div class="mc-card-body">
+          <h2 style="margin-top:0;">Create</h2>
+          <p class="muted">No spreadsheet needed — set the year's rates, add service rows (costs
+            calculate from PD automatically, each value still editable), and save as a
+            <strong>DRAFT</strong> you then activate.</p>
+        </div>
+        <div class="mc-card-actions">
+          <button type="button" class="btn-primary" id="mc-create-toggle">Create</button>
+        </div>
       </div>
-      <p class="muted" style="margin-bottom:0;">No spreadsheet needed. Set the year's rates, then add
-        service rows — costs calculate from PD automatically (and each value stays editable for the
-        odd exception). Saves as a <strong>DRAFT</strong> you then activate.</p>
-      <div id="mc-create-panel" hidden></div>
+
+      <div class="mc-or" aria-hidden="true">OR</div>
+
+      <div class="card mc-top-card">
+        <form id="mc-form" class="mc-card-form">
+          <div class="mc-card-body">
+            <h2 style="margin-top:0;">Import</h2>
+            <div class="mc-import-fields">
+              <label class="field">
+                <span>Workbook (.xlsx)</span>
+                <input id="mc-file" type="file" accept=".xlsx" required />
+              </label>
+              <label class="field">
+                <span>Financial year (optional)</span>
+                <input id="mc-fy" type="text" placeholder="FY27" />
+              </label>
+            </div>
+            <div id="mc-error" class="form-error" role="alert" hidden></div>
+          </div>
+          <div class="mc-card-actions">
+            <button class="btn-primary" type="submit" id="mc-submit">Upload &amp; Parse</button>
+          </div>
+        </form>
+        <div id="mc-summary"></div>
+      </div>
     </div>
 
     <div style="margin-top: var(--space-6);">
@@ -122,7 +133,7 @@ export async function renderMenuCards(view) {
       errorEl.hidden = false;
     } finally {
       submitBtn.disabled = false;
-      submitBtn.textContent = 'Upload & parse';
+      submitBtn.textContent = 'Upload & Parse';
     }
   });
 
@@ -259,49 +270,55 @@ let rowSeq = 0; // unique ids for dynamic rows
 
 function wireCreate(view) {
   const toggle = view.querySelector('#mc-create-toggle');
-  const panel = view.querySelector('#mc-create-panel');
-
-  toggle.addEventListener('click', () => {
-    const open = panel.hidden;
-    panel.hidden = !open;
-    toggle.setAttribute('aria-expanded', String(open));
-    toggle.textContent = open ? 'Cancel' : 'Create new';
-    if (open && !panel.dataset.built) { buildCreateForm(view, panel); panel.dataset.built = '1'; }
-  });
+  toggle.addEventListener('click', () => openCreateModal(view));
 }
 
-function buildCreateForm(view, panel) {
-  panel.innerHTML = `
-    <div class="mc-create-form" style="margin-top: var(--space-4);">
-      <div class="mc-header-grid">
-        <label class="field"><span>Version label *</span><input id="cm-label" type="text" placeholder="e.g. V6" /></label>
-        <label class="field"><span>Financial year *</span><input id="cm-fy" type="text" placeholder="e.g. FY28" /></label>
-        <label class="field"><span>Blended USP rate (£) *</span><input id="cm-rate" type="number" step="0.01" min="0" value="55.56" /></label>
-        <label class="field"><span>Overhead % *</span><input id="cm-ovh" type="number" step="0.01" min="0" value="40" /></label>
-        <label class="field"><span>People-day rate (£) *</span><input id="cm-pdr" type="number" step="0.01" min="0" value="144" /></label>
-      </div>
-      <p class="muted" style="margin:var(--space-2) 0;">Rates change roughly yearly — edit them above and
-        the rows below recalculate (except any value you've overridden).</p>
+/** Open the "Create a Menu Card" form in a modal dialog (Cancel / Save footer). */
+function openCreateModal(view) {
+  const host = document.createElement('div');
+  host.className = 'est-modal-backdrop';
+  host.innerHTML = `
+    <div class="card est-modal mc-create-modal" role="dialog" aria-modal="true" aria-labelledby="cm-title">
+      <button type="button" class="modal-close" id="cm-x" aria-label="Close"><span aria-hidden="true">✕</span></button>
+      <h2 id="cm-title" style="margin-top:0;">Create a Menu Card</h2>
+      <div class="mc-create-form">
+        <div class="mc-header-grid">
+          <label class="field"><span>Version label *</span><input id="cm-label" type="text" placeholder="e.g. V6" /></label>
+          <label class="field"><span>Financial year *</span><input id="cm-fy" type="text" placeholder="e.g. FY28" /></label>
+          <label class="field"><span>Blended USP rate (£) *</span><input id="cm-rate" type="number" step="0.01" min="0" value="55.56" /></label>
+          <label class="field"><span>Overhead % *</span><input id="cm-ovh" type="number" step="0.01" min="0" value="40" /></label>
+          <label class="field"><span>People-day rate (£) *</span><input id="cm-pdr" type="number" step="0.01" min="0" value="144" /></label>
+        </div>
+        <p class="muted" style="margin:var(--space-2) 0;">Rates change roughly yearly — edit them above and
+          the rows below recalculate (except any value you've overridden).</p>
 
-      <div style="overflow-x:auto;">
-        <table class="data-table mc-variant-table">
-          <thead>
-            <tr>
-              <th>Component *</th><th>Size *</th><th>Description *</th><th>PD *</th>
-              <th>USP</th><th>ATOM</th><th>TCS Cost</th><th>FTE Cost</th><th>Total</th><th></th>
-            </tr>
-          </thead>
-          <tbody id="cm-rows"></tbody>
-        </table>
-      </div>
-      <button type="button" class="btn-ghost" id="cm-add-row">+ Add service row</button>
+        <div style="overflow-x:auto;">
+          <table class="data-table mc-variant-table">
+            <thead>
+              <tr>
+                <th>Component *</th><th>Size *</th><th>Description *</th><th>PD *</th>
+                <th>USP</th><th>ATOM</th><th>TCS Cost</th><th>FTE Cost</th><th>Total</th><th></th>
+              </tr>
+            </thead>
+            <tbody id="cm-rows"></tbody>
+          </table>
+        </div>
+        <button type="button" class="btn-ghost" id="cm-add-row">+ Add service row</button>
 
-      <div id="cm-error" class="form-error" role="alert" hidden style="margin-top:var(--space-3);"></div>
-      <div id="cm-create-summary" style="margin-top:var(--space-3);"></div>
-      <div style="margin-top: var(--space-4); display:flex; gap:var(--space-3);">
+        <div id="cm-error" class="form-error" role="alert" hidden style="margin-top:var(--space-3);"></div>
+        <div id="cm-create-summary" style="margin-top:var(--space-3);"></div>
+      </div>
+      <div class="est-modal-actions">
+        <button type="button" class="btn-ghost" id="cm-cancel">Cancel</button>
         <button type="button" class="btn-primary" id="cm-save">Save as DRAFT</button>
       </div>
     </div>`;
+  view.appendChild(host);
+  const panel = host.querySelector('.mc-create-form');
+  const close = trapFocus(host, host.querySelector('[role="dialog"]'), () => host.remove());
+  host.querySelector('#cm-cancel').addEventListener('click', close);
+  host.querySelector('#cm-x').addEventListener('click', close);
+  host.addEventListener('click', (e) => { if (e.target === host) close(); });
 
   const addRow = () => {
     const id = `r${++rowSeq}`;
@@ -335,7 +352,11 @@ function buildCreateForm(view, panel) {
     });
   });
 
-  panel.querySelector('#cm-save').addEventListener('click', () => saveCreate(view, panel));
+  panel.querySelector('#cm-save').addEventListener('click', () => saveCreate(view, panel, close));
+
+  // Focus the first field for keyboard users.
+  const firstField = panel.querySelector('#cm-label');
+  if (firstField) firstField.focus();
 }
 
 /** Recompute a row's six derived fields from its PD + the current header rates. */
@@ -351,7 +372,7 @@ function recalcRow(view, panel, tr) {
   tr.querySelector('.cm-total').value = c.totalCost;
 }
 
-async function saveCreate(view, panel) {
+async function saveCreate(view, panel, close) {
   const errEl = panel.querySelector('#cm-error');
   const summaryEl = panel.querySelector('#cm-create-summary');
   errEl.hidden = true; summaryEl.innerHTML = '';
@@ -399,14 +420,18 @@ async function saveCreate(view, panel) {
     const body = await api.post('/api/menucards', {
       label, financialYear, blendedUspRate, overheadPct, peopleDayRate, variants,
     });
-    summaryEl.innerHTML = `<div class="card" style="background:var(--surface-2);">
-      <p style="margin:0;"><span class="badge ok">Created</span> Staged <strong>${esc(body.version?.label)}</strong>
-      (${esc(body.version?.financialYear)}) as a DRAFT with <strong>${body.totalVariants}</strong> variants.
-      Activate it in the Versions list below.</p></div>`;
+    // Close the modal and surface the result in the main page (next to the Import summary area).
+    if (typeof close === 'function') close();
+    const mainSummary = view.querySelector('#mc-summary');
+    if (mainSummary) {
+      mainSummary.innerHTML = `<div class="card" style="background:var(--surface-2); margin-top:var(--space-4);">
+        <p style="margin:0;"><span class="badge ok">Created</span> Staged <strong>${esc(body.version?.label)}</strong>
+        (${esc(body.version?.financialYear)}) as a DRAFT with <strong>${body.totalVariants}</strong> variants.
+        Activate it in the Versions list below.</p></div>`;
+    }
     await loadVersions(view);
   } catch (err) {
     fail(err instanceof ApiError ? err.message : 'Could not create the Menu Card.');
-  } finally {
     saveBtn.disabled = false; saveBtn.textContent = 'Save as DRAFT';
   }
 }

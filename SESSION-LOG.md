@@ -5,6 +5,34 @@ Running log of work across sessions. Newest entries at the top. Companion to the
 
 ---
 
+## 2026-11-06 (later x7) — UI polish from Isaac's page observations (Requests sort + Menu Cards rework)
+
+Frontend-only tweaks from reviewing the live pages. All verified 50/50 + `node --check` clean.
+
+### Requests list — default sort
+Changed the default order from newest-first (createdAt) to **JIRA/ARCH reference natural-descending**
+(so `ARCH-1234` > `ARCH-9`, not broken string order), with createdAt as a tiebreak. Added a
+`naturalCompare` helper (Intl.Collator numeric).
+
+### Menu Cards page — Create vs Import rework
+- **Two cards side by side** with a bold **OR** between them: **Create** (left) · OR · **Import**
+  (right), equal-height/symmetric, compact padding (height trimmed ~30% at Isaac's request).
+- Headings shortened to **"Create"** / **"Import"**; intro line reworded to cover both paths;
+  buttons relabelled **"Create"** and **"Upload & Parse"**, centred at the bottom of each card.
+- **Import** box: Choose File + Financial year on one 2-col row.
+- **Create now opens a MODAL** (was an inline expand) — the full rates+variant-grid form in a dialog
+  with a top-right **✕**, plus **Cancel** / **Save as DRAFT**; closes on ✕/Cancel/Escape/backdrop;
+  on save it closes, shows the "Created…" confirmation on the page, and refreshes the versions list.
+
+### Bug fixed: modal Cancel/Save were dead
+Root cause: `menucards.js` used `trapFocus` but it was **only defined in `estimates.js`** (never
+imported) → `ReferenceError` aborted the modal wiring, so the form rendered but nothing was wired.
+**Fix:** extracted `trapFocus` into a shared **`web/views/modal-util.js`**, imported by BOTH views
+(single source of truth; removed the inline copy from estimates.js). Classic stale/duplicated-helper
+trap — now deduplicated.
+
+---
+
 ## 2026-11-06 (later x6) — a11y polish: cleared the remaining deferred Stage-10 should-fixes
 
 Worked through the lower-value a11y items from the Pre-Live audit. Several turned out already-done

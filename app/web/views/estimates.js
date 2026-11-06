@@ -9,6 +9,7 @@
  */
 import { api, ApiError } from '../api.js';
 import { isAdmin } from '../session.js';
+import { trapFocus } from './modal-util.js';
 import { exportRequestPdf, previewRequestPdf, exportRequestsTablePdf } from './pdf-export.js';
 
 // Component codes -> display label (WILDFLY shows as WFY, per Isaac's catalogue labels).
@@ -197,8 +198,14 @@ async function loadList(view) {
     // Archived requests are excluded from the default list by the server; request them explicitly.
     const data = await api.get(`/api/estimates${showArchived ? '?status=ARCHIVED' : ''}`);
     allRequests = data.items || [];
-    // Newest first so "latest 10" is meaningful (falls back to stable order if no createdAt).
-    allRequests.sort((a, b) => String(b.createdAt || '').localeCompare(String(a.createdAt || '')));
+    // Default sort: by JIRA reference DESCENDING (natural order, so ARCH-1234 > ARCH-9), then by
+    // creation date descending as a tiebreak (only bites if two share a ref, which JIRA-unique
+    // makes rare). "Descending ARCH" = the highest/newest reference first.
+    allRequests.sort((a, b) => {
+      const byRef = naturalCompare(String(b.jiraReference || ''), String(a.jiraReference || ''));
+      if (byRef !== 0) return byRef;
+      return String(b.createdAt || '').localeCompare(String(a.createdAt || ''));
+    });
     if (!allRequests.length) {
       el.innerHTML = showArchived
         ? '<p class="muted">No archived requests.</p>'
@@ -1018,62 +1025,19 @@ function debounce(fn, ms) {
   return (...a) => { clearTimeout(t); t = setTimeout(() => fn(...a), ms); };
 }
 
+/**
+ * Natural (human) string compare so references like ARCH-9 / ARCH-1234 order by their numeric
+ * parts, not character-by-character (plain string sort would put ARCH-1234 before ARCH-9).
+ * Uses Intl.Collator with numeric:true; returns a<b => -1, a>b => 1.
+ */
+const _natColl = new Intl.Collator('en', { numeric: true, sensitivity: 'base' });
+function naturalCompare(a, b) {
+  return _natColl.compare(a, b);
+}
+
 /** Announce to screen readers via the app's polite live region (set up in app.js). No-op if absent. */
 function announce(msg) {
   if (typeof window.mdpAnnounce === 'function') window.mdpAnnounce(msg);
-}
-
-/**
- * Accessibility: trap keyboard focus inside an open modal (the Pre-Live audit's deferred
- * should-fix). Keeps Tab / Shift+Tab cycling within `dialog`, moves focus in on open, closes on
- * Escape, and RESTORES focus to whatever was focused before the modal opened (usually the button
- * that triggered it). Returns a wrapped `close` that also tears the trap down — call that instead
- * of the raw remover so cleanup + focus-restore always happen.
- *
- * @param {HTMLElement} host    the backdrop element appended to the DOM
- * @param {HTMLElement} dialog  the role="dialog" element inside it
- * @param {Function}    remove  the raw close (e.g. () => host.remove())
- * @returns {Function}  a close() that removes the modal, detaches the handler, and restores focus
- */
-function trapFocus(host, dialog, remove) {
-  const previouslyFocused = document.activeElement;
-  const FOCUSABLE = 'a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])';
-
-  const focusable = () => Array.from(dialog.querySelectorAll(FOCUSABLE)).filter((el) => el.offsetParent !== null || el === document.activeElement);
-
-  function onKeydown(ev) {
-    if (ev.key === 'Escape') { ev.preventDefault(); close(); return; }
-    if (ev.key !== 'Tab') return;
-    const items = focusable();
-    if (!items.length) { ev.preventDefault(); return; }
-    const first = items[0];
-    const last = items[items.length - 1];
-    const active = document.activeElement;
-    if (ev.shiftKey) {
-      // Shift+Tab off the first item -> wrap to the last.
-      if (active === first || !dialog.contains(active)) { ev.preventDefault(); last.focus(); }
-    } else {
-      // Tab off the last item -> wrap to the first.
-      if (active === last || !dialog.contains(active)) { ev.preventDefault(); first.focus(); }
-    }
-  }
-
-  function close() {
-    host.removeEventListener('keydown', onKeydown, true);
-    remove();
-    // Restore focus to the trigger so keyboard users aren't dumped at the top of the page.
-    if (previouslyFocused && typeof previouslyFocused.focus === 'function') {
-      try { previouslyFocused.focus(); } catch { /* element may be gone */ }
-    }
-  }
-
-  host.addEventListener('keydown', onKeydown, true);
-  // Move focus into the dialog (first field, else the dialog itself).
-  const items = focusable();
-  if (items.length) items[0].focus();
-  else { dialog.setAttribute('tabindex', '-1'); dialog.focus(); }
-
-  return close;
 }
 
 /**

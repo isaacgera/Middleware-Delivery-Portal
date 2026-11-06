@@ -673,6 +673,58 @@ tr.row-aging td { background: color-mix(in srgb, var(--warning) 9%, transparent)
   svg * { transition: none !important; animation: none !important; }
 }
 
+/* ---- Menu Cards: Create (left) | OR | Import (right) — equal-size symmetric cards ---- */
+.mc-top-grid {
+  display: grid; gap: var(--space-4); margin-top: var(--space-5);
+  /* two equal flexible columns with a narrow auto-width "OR" divider between them */
+  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+  align-items: stretch;   /* both cards stretch to the same (tallest) height = symmetric */
+}
+/* Each top card is a flex column: body grows, the action button sits pinned at the bottom
+   (centred), so both cards end with their primary button on the same baseline = symmetric + tidy.
+   Compact padding + tight internal spacing to keep these two cards short. */
+.mc-top-grid .mc-top-card {
+  height: 100%; display: flex; flex-direction: column;
+  padding: var(--space-3) var(--space-4);   /* tighter than the default .card padding */
+}
+.mc-top-card h2 { margin-bottom: var(--space-1); }
+.mc-top-card .mc-card-body { flex: 1; }
+.mc-top-card .mc-card-body > p { margin: 0 0 var(--space-2); }   /* trim the blurb spacing */
+.mc-top-card .mc-card-form { display: flex; flex-direction: column; flex: 1; }
+.mc-top-card .mc-card-actions {
+  display: flex; justify-content: center; margin-top: var(--space-2);
+}
+/* Import box: Choose File + Financial Year side by side (2-col), narrower fields. */
+.mc-import-fields {
+  display: grid; grid-template-columns: 1fr 1fr; gap: var(--space-3); align-items: start;
+}
+.mc-import-fields input { width: 100%; }
+@media (max-width: 520px) { .mc-import-fields { grid-template-columns: 1fr; } }
+
+/* The create form is now a MODAL — make it wide enough for the variant table. */
+.mc-create-modal { width: min(1100px, 96vw); max-width: 96vw; position: relative; }
+
+/* Modal close (X) — top-right corner of a dialog. */
+.modal-close {
+  position: absolute; top: var(--space-3); right: var(--space-3);
+  width: 2rem; height: 2rem; padding: 0; line-height: 1;
+  display: inline-flex; align-items: center; justify-content: center;
+  border: 1px solid var(--border); border-radius: var(--radius-sm);
+  background: var(--surface-2); color: var(--text-light); font-size: 1rem;
+  transition: border-color var(--transition), color var(--transition);
+}
+.modal-close:hover { border-color: var(--danger); color: var(--danger); }
+.mc-or {
+  display: flex; align-items: center; justify-content: center;
+  font-size: 1.4rem; font-weight: 700; color: var(--text-light);
+  letter-spacing: 0.5px; padding: 0 var(--space-2);
+}
+@media (max-width: 860px) {
+  /* stack vertically; the OR becomes a horizontal separator between the two */
+  .mc-top-grid { grid-template-columns: 1fr; }
+  .mc-or { padding: var(--space-1) 0; }
+}
+
 /* ---- Menu Card on-screen create form (task 9.12) ---- */
 .mc-create-head { display: flex; align-items: center; justify-content: space-between; gap: var(--space-3); }
 .mc-header-grid {
