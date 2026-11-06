@@ -5,6 +5,18 @@ Running log of work across sessions. Newest entries at the top. Companion to the
 
 ---
 
+## 2026-11-06 (later x4) — pushed the session's work to all 3 remotes + userguide install section
+
+- **Userguide:** added a **"1a. Installing MDP as an app"** end-user section (commit `a8a3f89`) —
+  plain Edge/Chrome install steps + the key clarification that you install from the *running MDP
+  link*, not the GitLab/GitHub repo page (answering Isaac's question). HTML tags verified balanced.
+- **Pushed `git push all main`** — 4 commits to BT Team / BT Personal / GitHub: `87b1f90` (modal
+  focus-trap), `a1a7c5c` (9.12 feature), `3124537` (9.12 verified), `a8a3f89` (userguide install).
+  CI re-running on all three; the unit-tests stage now exercises the **44-test** suite (incl. the 6
+  new 9.12 tests) in CI, not just locally. No errors observed during the run.
+
+---
+
 ## 2026-11-06 (later x3) — Feature 9.12: on-screen Menu Card creation (Quick Spec → built, code-complete)
 
 Built the on-screen Menu Card creation feature as a Quick Spec. **Decisions (Isaac):** calculator
