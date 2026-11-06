@@ -62,8 +62,11 @@ estimates across users.
 
 ### Verified
 Test suite still **38/38**; manifest JSON validates; `node --check` clean on app.js / sw.js /
-static.js. (Install prompt + the SW serving behaviour are a browser check for Isaac once served
-over http://localhost or HTTPS — a file:// open won't register a SW.)
+static.js. **Install VERIFIED by Isaac (2026-11-06):** ran `node server/server.js` locally, opened
+http://127.0.0.1:4000 in the browser, and successfully **installed MDP as a desktop app** (own
+window, Start-menu entry). Confirms the install-only PWA works end-to-end. (Clarified for Isaac:
+PWA install is a browser feature over a *running* server — local now, BT server for the team later;
+it is independent of the GitLab/GitHub repos, which are just code storage.)
 
 ### Git repo initialised (local) — ready to push
 - `git init` in the MDP root; added a **root `.gitignore`** (belt-and-braces over app/ + parked
