@@ -5,6 +5,22 @@ Running log of work across sessions. Newest entries at the top. Companion to the
 
 ---
 
+## 2026-11-06 (later x6) — a11y polish: cleared the remaining deferred Stage-10 should-fixes
+
+Worked through the lower-value a11y items from the Pre-Live audit. Several turned out already-done
+(verified, no change); a few needed a small fix:
+- **Fixed:** catalogue search `<div class="field">` → `<label>` (associates the label); catalogue
+  component/size **pills now carry `aria-pressed`** (toggle state to SRs); **mobile tap-targets** —
+  line-action ✕/⧉ buttons grow to ~40px min on `max-width:640px` / `pointer:coarse` (WCAG 2.5.5).
+- **Already OK (verified, no change):** reports + analytics filters wrap controls in `<label>`;
+  analytics mode pills use `role=tab`/`aria-selected` (correct pattern); estimates column-filters
+  have `aria-label` (Stage 10); login form labelled + strong focus ring.
+- **Deliberately skipped:** sortable table headers — a feature, not an a11y fix.
+Verified 50/50 + `node --check` clean. Committed `1274ee3`; audit review updated (all deferred
+should-fixes now resolved or confirmed-satisfied bar the feature).
+
+---
+
 ## 2026-11-06 (later x5) — Feature 9.11: request import pipeline (built) + FIXED the OneDrive/git gc loop
 
 ### ⚠️ Important fix — OneDrive vs git auto-gc (read this before future git work)

@@ -74,8 +74,17 @@
 4. **Date format hints** → From/To date inputs now carry `title="Format: YYYY-MM-DD"` + clearer `aria-label`.
 5. **Loading states** → `aria-busy="true"` + "Loading…" on the Requests list and Catalogue result containers during fetch (cleared in `finally`).
 
-### Deferred — SHOULD-FIX (logged, not done this pass, per Isaac)
-Dashboard/catalogue filter `for`/`id` label associations; catalogue pill `aria-pressed`; sortable table headers; login focus-contrast check; mobile tap-target bump on line actions; ~~explicit modal focus-trap~~ (**DONE 2026-11-06** — see below); labels on the estimates column-filter inputs.
+### Deferred — SHOULD-FIX — ALL RESOLVED (2026-11-06)
+- ~~Dashboard filter label association~~ — already OK: reports/analytics filters wrap the control in `<label class="field">` (valid association). No change needed.
+- ~~Catalogue filter/search label~~ — **FIXED**: catalogue search `<div class="field">` → `<label class="field">`.
+- ~~Catalogue pill `aria-pressed`~~ — **FIXED**: pills now carry `aria-pressed` (rebuild keeps it in sync). (Analytics mode pills were already correct via `role=tab`/`aria-selected`.)
+- ~~Labels on estimates column-filter inputs~~ — already OK: each has `aria-label="Filter by <col>"` (added Stage 10).
+- ~~Login focus-contrast check~~ — verified OK: inputs wrapped in `<label>`, global `:focus-visible` ring has strong contrast on the login surface in both themes. No change needed.
+- ~~Mobile tap-target bump on line actions~~ — **FIXED**: `.line-actions .btn-ghost` grows to ~40px min on `max-width:640px` / `pointer:coarse`.
+- **Sortable table headers** — intentionally NOT done: it's a feature, not an a11y fix (out of scope for the polish pass).
+- ~~explicit modal focus-trap~~ (**DONE 2026-11-06** — see below).
+
+**Net:** every deferred a11y should-fix is now resolved or confirmed already-satisfied, except sortable headers (a deliberate feature omission). Verified: 50/50 tests, `node --check` clean.
 
 ### Follow-up — modal focus-trap DONE (2026-11-06)
 The highest-value deferred should-fix is now implemented. Added a reusable `trapFocus(host, dialog,
