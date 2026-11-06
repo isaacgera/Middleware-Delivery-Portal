@@ -199,11 +199,15 @@ stays In Progress until then).
 > prod-green" worry dissolves. Code/docs/CI prepared this session; the actual provisioning + deploy
 > are on the BT side (see 11.5/11.8).
 
-- [x] 11.1 **CI pipeline — DONE (2026-11-05)** (repo-create is on the BT side). `.gitlab-ci.yml` at
-  the MDP root: a Node 22 image, a **syntax-check** stage (`node --check` over all server+web JS +
-  the runner + backup script — the dependency-free lint equivalent) and a **test** stage
-  (`node app/run-tests.mjs`, fails the pipeline on a red suite). No `npm install`/bundle step (no
-  deps). Pushing to BT GitLab + confirming ignore rules on first commit = the remaining BT-side bit.
+- [x] 11.1 **Repo + CI pipeline — DONE + GREEN ON BT (2026-11-06).** `.gitlab-ci.yml`: Node 22
+  image, **syntax-check** stage (`node --check` over all server+web JS + runner + backup script)
+  and **test** stage (`node app/run-tests.mjs`). No npm/bundle step. **Repo created + pushed** to
+  BT Team, BT Personal, and GitHub (branch `main`; local `all` remote fans out). **BT Team pipeline
+  #7894903 PASSED** — both stages green, 38/38 tests ran in BT CI on Docker `node:22` with zero npm.
+  Fix applied to get a runner: tagged jobs with `mobius_shared_runner` (BT shared runners are
+  tagged; untagged jobs were stuck pending). **CI GREEN on all three remotes:** BT Team ✅,
+  BT Personal ✅ (GitLab, same tag), **GitHub ✅** via `.github/workflows/ci.yml` (GitHub Actions,
+  hosted Ubuntu runner, mirrors the pipeline). All verified by Isaac 2026-11-06.
 - [x] 11.2 **Production DB decided — SQLite (DONE 2026-11-05).** Live track stays `node:sqlite`,
   unchanged dev→prod; Track 2 (Prisma + Postgres/SQL Server) parked as the escape hatch with
   documented revisit triggers. Recorded in SPEC-design §8 + DEPLOYMENT.md §4.
@@ -214,8 +218,12 @@ stays In Progress until then).
 - [x] 11.4 **Generated-PDF storage documented — DONE.** PDFs are client-generated (vendored jsPDF)
   and recorded as metadata only; stored under the app's doc folder on the same encrypted,
   access-controlled volume as the DB. Retention = no auto-cleanup (O5, conscious). DEPLOYMENT.md §3/§6.
-- [ ] 11.5 Deploy behind TLS reverse proxy; smoke-test with real users. **(BT-side.)** Procedure +
-  the `NODE_ENV=production`→`Secure`-cookie requirement are in DEPLOYMENT.md §2.
+- [~] 11.5 Deploy behind TLS reverse proxy; smoke-test with real users. **(BT-side execution; prep
+  DONE 2026-11-06.)** Ready-made artifacts added under `deploy/`: `nginx-mdp.conf` + `iis-web.config-notes.md`
+  (TLS reverse proxy, HTTP→HTTPS, forward to loopback `127.0.0.1:4000`, X-Forwarded-Proto), `mdp.env.sample`
+  (prod env incl. `NODE_ENV=production`→Secure cookie + `SESSION_SECRET` generator), `run-as-service-windows.md`
+  (NSSM / Task Scheduler for boot+restart), `backup-mdp.cmd` (scheduled backup + off-box copy), `deploy/README.md`
+  (order of operations). Remaining = run it on the BT box + smoke-test.
 - [x] 11.6 **Backup & restore — DONE + VERIFIED (2026-11-05).** Added dependency-free
   `app/backup-db.mjs` (atomic `VACUUM INTO`, safe on a live DB; `--verify` runs `integrity_check` +
   row counts; non-zero exit for scheduled-task detection). **Test restore proven lossless:** a

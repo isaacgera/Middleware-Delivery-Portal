@@ -19,18 +19,27 @@ order — provisioning (11.8) first, then the go-live itself (11.5). Section ref
 detail below.
 
 **Provision (11.8)**
-- [ ] Create the BT GitLab repo; push `app/` + root files. CI (`.gitlab-ci.yml`) runs automatically.
-- [ ] Before the first commit, confirm ignore rules — `git status` must NOT list `.env`, `data/`, or any `.db`. (§1)
+- [x] ~~Create the BT GitLab repo; push `app/` + root files.~~ **DONE 2026-11-06** — pushed to BT Team
+  (`robt/app02752/middleware-delivery-portal`), BT Personal (`615509493/…`) and GitHub
+  (`isaacgera/Middleware-Delivery-Portal`), branch `main`. A local `all` remote fans out to all three
+  (`git push all main`).
+- [x] ~~Before the first commit, confirm ignore rules.~~ **DONE** — dry-run verified no `.env`/`data/`/
+  `*.db`/`node_modules` tracked (root `.gitignore` added).
+- [x] ~~CI runs automatically.~~ **DONE + GREEN** — BT Team pipeline #7894903 PASSED (syntax-check +
+  38/38 tests, Docker `node:22`). **Learning:** BT shared runners are **tagged**, so the jobs carry
+  `tags: [mobius_shared_runner]` in `.gitlab-ci.yml` (untagged jobs sit "pending/stuck"). If a
+  different BT project/runner is used, change that tag to match the runner shown under
+  *Settings → CI/CD → Runners*.
 - [ ] Provision the BT server: install **Node 22+**; put the app on an **encrypted volume** (BitLocker / BT disk encryption). (§3)
 - [ ] Lock file/folder permissions on `data/` (DB + docs) to the app's service account only. (§3)
-- [ ] Generate + set a real **`SESSION_SECRET`** (not the dev default). (§1)
-- [ ] Set **`NODE_ENV=production`** (this is what makes the session cookie `Secure`). (§2)
+- [ ] Copy `deploy/mdp.env.sample` → `app/.env`; generate + set a real **`SESSION_SECRET`** (not the dev default) and **`NODE_ENV=production`**. (§1, §2 — ready-made template in `deploy/`.)
 - [ ] **Change the seeded passwords** — `admin123` / `manager123` must not survive to prod. (§1)
-- [ ] Schedule a daily **backup** (`node backup-db.mjs --verify`) to the encrypted location + an **off-box copy**. (§5)
+- [ ] Run MDP as a **service** that starts on boot + restarts on crash — see `deploy/run-as-service-windows.md` (NSSM or Task Scheduler).
+- [ ] Schedule the daily **backup** via Task Scheduler calling `deploy/backup-mdp.cmd` (runs `backup-db.mjs --verify` + an **off-box copy**). (§5)
 
 **Go live (11.5)**
-- [ ] Run the app with `NODE_ENV=production`; bind to loopback/private interface. (§2)
-- [ ] Put a **TLS reverse proxy** (nginx / IIS-ARR / BT standard) in front; HTTPS cert on the proxy; HTTP→HTTPS redirect. (§2)
+- [ ] Run the app with `NODE_ENV=production`; bind to loopback (`127.0.0.1`) so only the proxy reaches it. (§2)
+- [ ] Put a **TLS reverse proxy** in front — ready-made configs in `deploy/`: `nginx-mdp.conf` (nginx) or `iis-web.config-notes.md` (IIS + ARR). HTTPS cert on the proxy; HTTP→HTTPS redirect. (§2)
 - [ ] **Smoke-test with real users** over HTTPS: log in (both roles), create a request + add lines, export a PDF, view Dashboards/Analytics, check Audit. (task 11.5)
 - [ ] Confirm the backup task has produced at least one verified snapshot before announcing go-live. (§5)
 

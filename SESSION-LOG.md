@@ -5,6 +5,39 @@ Running log of work across sessions. Newest entries at the top. Companion to the
 
 ---
 
+## 2026-11-06 (later) — Deployment prep artifacts (deploy/ folder) — ready for the BT-side go-live
+
+With CI green on all three remotes, prepped the concrete deployment artifacts so the BT-side steps
+(11.5 + the rest of 11.8) are copy-paste rather than figure-it-out. All verified locally where
+possible; execution is still on the BT server.
+
+### Added `deploy/` folder
+- **`README.md`** — order of operations + the app's run facts (`node server/server.js`, loopback
+  `127.0.0.1:4000`, env vars, SIGINT/SIGTERM, `/api/health`).
+- **`nginx-mdp.conf`** — nginx TLS termination + reverse proxy to loopback; HTTP→HTTPS redirect;
+  X-Forwarded-Proto; 20 MB upload headroom; health-probe location.
+- **`iis-web.config-notes.md`** — the IIS + **ARR** equivalent (URL Rewrite rules, enable-proxy,
+  the `HTTP_X_FORWARDED_PROTO` server-variable gotcha, 20 MB request limit). BT is Windows so this
+  is the likely path.
+- **`mdp.env.sample`** — production `.env` template: `NODE_ENV=production` (→ Secure cookie),
+  `SESSION_SECRET` with a one-line generator, loopback HOST/PORT, idle timeout, encrypted-volume
+  DB/doc paths.
+- **`run-as-service-windows.md`** — boot-start + restart-on-crash via **NSSM** (recommended) or
+  Task Scheduler; health-check verification; logging.
+- **`backup-mdp.cmd`** — Task Scheduler wrapper: runs `backup-db.mjs --verify` (non-zero exit on
+  failure) then copies the newest snapshot to an off-box share.
+
+### Verified
+`backup-db.mjs --verify` re-run (exit 0, lossless). YAML/config files hand-checked (no tabs, valid
+structure). DEPLOYMENT.md §0 checklist now points at these ready-made files; SPEC-tasks 11.5 → `[~]`
+(prep done, BT execution remaining).
+
+### Remaining (unchanged) — BT-side
+Provision the server (Node 22+, encrypted volume, `.env`, change seeded passwords, service, backup
+schedule) → reverse proxy + TLS → smoke-test → 12.2 e2e → 12.4 sign-off → Built.
+
+---
+
 ## 2026-11-06 — Installability (install-only PWA, NOT offline) + git repo init (pre-push)
 
 Picking up the BT-side deployment thread. Before pushing to GitLab, Isaac asked for MDP to be
@@ -47,6 +80,23 @@ over http://localhost or HTTPS — a file:// open won't register a SW.)
   commands; Isaac runs them. (BT Zscaler may force SSH over HTTPS for git — fall back to SSH if the
   HTTPS push throws a TLS error.)
 - Then: 11.8 provision → 11.5 deploy+TLS → 12.2 e2e → 12.4 sign-off → Built. See DEPLOYMENT.md §0.
+
+### UPDATE (2026-11-06, same session) — pushed to all 3 remotes + BT CI GREEN
+- **Local git:** branch renamed `master`→**`main`**; remotes `team` (BT Team), `personal` (BT
+  personal), `github` (`isaacgera/Middleware-Delivery-Portal`), plus an **`all`** remote with all
+  three push URLs for one-command fan-out (`git push all main`).
+- **Pushed** to all three via `git push all main`. BT Team verified in browser (commit `7566afb3`,
+  2 commits, 378 KiB, no node_modules/db/secrets — ignore rules held).
+- **CI made green on BT Team.** First pipeline sat **pending/stuck** — cause: BT shared runners are
+  **tagged**, our jobs were untagged so nothing matched. Fix: added `default: tags:
+  [mobius_shared_runner]` to `.gitlab-ci.yml` (the online instance runner "Runner #1 VuEZOSXN",
+  desc `mobius_shared_runner`). Pushed → pipeline **#7894903 PASSED** (3m22s): syntax-check ✅ +
+  unit-tests ✅ (**38/38 ran in BT CI**, Docker `node:22`, zero npm). Commit `e0897c00`.
+- **CI now GREEN on all three remotes (confirmed by Isaac, 2026-11-06):** BT Team ✅, BT Personal ✅
+  (both GitLab, via the `mobius_shared_runner` tag), and **GitHub ✅** via a new GitHub Actions
+  workflow `.github/workflows/ci.yml` (commit `e1aadcc`) — mirrors the GitLab pipeline (syntax-check
+  + `node --test` 38/38) on GitHub's hosted Ubuntu runner, no runner tagging needed. Dependency-free
+  design confirmed portable across all three CI environments (all just `node:22`, zero npm).
 
 ---
 
