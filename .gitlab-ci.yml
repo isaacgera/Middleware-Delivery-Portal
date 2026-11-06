@@ -13,6 +13,14 @@
 
 image: node:22
 
+# All jobs target the BT shared instance runner by its tag. (Untagged jobs won't match a tagged
+# runner, which is why the first pipeline sat "pending/stuck".) If you later use a different
+# runner, change this tag. If this runner is NOT a Docker executor, the `image:` above is ignored
+# and the job runs on the host's Node — see the fallback note at the bottom of this file.
+default:
+  tags:
+    - mobius_shared_runner
+
 stages:
   - check
   - test
