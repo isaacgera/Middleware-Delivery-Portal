@@ -1,0 +1,47 @@
+# MDP CI — GitHub Actions (mirror of .gitlab-ci.yml, for the GitHub remote).
+#
+# GitHub provides hosted runners, so no runner tagging is needed (unlike BT GitLab). The live app
+# in app/ is dependency-free (Node built-ins only) — there is NO `npm install` step; CI just needs
+# Node 22+. Mirrors the two GitLab stages: a syntax-check gate, then the node --test suite.
+#
+# The parked npm/Prisma stack in _parked-npm-stack/ is intentionally NOT built here.
+
+name: MDP CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  syntax-check:
+    name: Syntax check (node --check)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: node --check all server + web JS
+        run: |
+          node --version
+          echo "Syntax-checking server + web JS..."
+          find app/server app/web \( -name '*.js' -o -name '*.mjs' \) -print0 \
+            | while IFS= read -r -d '' f; do echo "  check $f"; node --check "$f"; done
+          node --check app/run-tests.mjs
+          node --check app/backup-db.mjs
+
+  unit-tests:
+    name: Unit tests (node --test)
+    runs-on: ubuntu-latest
+    needs: syntax-check
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Run the node --test suite (38 tests, throwaway SQLite DBs)
+        run: |
+          node --version
+          node app/run-tests.mjs
