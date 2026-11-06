@@ -5,6 +5,29 @@ Running log of work across sessions. Newest entries at the top. Companion to the
 
 ---
 
+## 2026-11-06 (later still) — a11y: modal focus-trap (closes the highest-value deferred Stage-10 item)
+
+While deployment waits on the BT server, picked off an independent, session-completable feature:
+the **modal focus-trap** — the top deferred should-fix from the Pre-Live audit (10.6).
+
+### What was built
+- New reusable **`trapFocus(host, dialog, remove)`** helper in `web/views/estimates.js`:
+  - Tab / Shift+Tab **cycle within** the open dialog (wrap at both ends).
+  - **Escape** closes the modal.
+  - Focus **moves into** the dialog on open (first field, else the dialog itself).
+  - Focus is **restored to the triggering control** on close (keyboard users aren't dumped at the
+    top of the page).
+  - Returns a wrapped `close()` that tears down the key handler + restores focus.
+- Wired both modals to it: **Add Request** (`openNewRequestDialog`) and **Edit details**
+  (`openEditDialog`). Existing Cancel-button + backdrop-click closers reuse the wrapped `close`.
+
+### Verified
+`node --check` clean on estimates.js; **38/38** tests still pass (frontend-only change). Browser
+keyboard check recommended at next sign-off (Tab can't leave the modal; Esc closes; focus returns
+to the opener). Review file + SPEC-tasks updated; remaining deferred a11y items are all lower-value.
+
+---
+
 ## 2026-11-06 (later) — Deployment prep artifacts (deploy/ folder) — ready for the BT-side go-live
 
 With CI green on all three remotes, prepped the concrete deployment artifacts so the BT-side steps

@@ -75,7 +75,16 @@
 5. **Loading states** → `aria-busy="true"` + "Loading…" on the Requests list and Catalogue result containers during fetch (cleared in `finally`).
 
 ### Deferred — SHOULD-FIX (logged, not done this pass, per Isaac)
-Dashboard/catalogue filter `for`/`id` label associations; catalogue pill `aria-pressed`; sortable table headers; login focus-contrast check; mobile tap-target bump on line actions; explicit modal focus-trap; labels on the estimates column-filter inputs. **The modal focus-trap is the highest-value of these — recommend picking it up in the next polish pass or before wider go-live.**
+Dashboard/catalogue filter `for`/`id` label associations; catalogue pill `aria-pressed`; sortable table headers; login focus-contrast check; mobile tap-target bump on line actions; ~~explicit modal focus-trap~~ (**DONE 2026-11-06** — see below); labels on the estimates column-filter inputs.
+
+### Follow-up — modal focus-trap DONE (2026-11-06)
+The highest-value deferred should-fix is now implemented. Added a reusable `trapFocus(host, dialog,
+remove)` helper in `estimates.js` and wired both modals (Add Request, Edit details): Tab/Shift+Tab
+now cycle within the open dialog, **Escape** closes it, focus moves into the dialog on open, and
+focus is **restored to the triggering control** on close. Verified: 38/38 tests still pass, `node
+--check` clean. Browser keyboard check recommended at next sign-off (Tab should not escape the
+modal; Escape closes; focus returns to the button that opened it). Remaining deferred items are all
+lower-value polish.
 
 ### Not changed (confirmed good, per the ALREADY GOOD list)
 Keyboard nav, dropdowns (`wireMenu`), semantic HTML, modal ARIA, icon-button labels, most token contrast, print exclusion, theme toggle.

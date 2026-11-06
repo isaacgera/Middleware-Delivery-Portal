@@ -433,7 +433,8 @@ function openNewRequestDialog(view) {
     </div>`;
   view.appendChild(host);
 
-  const close = () => host.remove();
+  // Focus-trap: keep Tab within the dialog, Escape closes, focus restored to the trigger on close.
+  const close = trapFocus(host, host.querySelector('[role="dialog"]'), () => host.remove());
   host.querySelector('#n-cancel').addEventListener('click', close);
   host.addEventListener('click', (e) => { if (e.target === host) close(); });
 
@@ -873,7 +874,8 @@ function openEditDialog(view, id) {
       </div>
     </div>`;
   view.appendChild(host);
-  const close = () => host.remove();
+  // Focus-trap: keep Tab within the dialog, Escape closes, focus restored to the trigger on close.
+  const close = trapFocus(host, host.querySelector('[role="dialog"]'), () => host.remove());
   host.querySelector('#e-cancel').addEventListener('click', close);
   host.addEventListener('click', (ev) => { if (ev.target === host) close(); });
   host.querySelector('#e-save').addEventListener('click', async () => {
@@ -926,6 +928,59 @@ function debounce(fn, ms) {
 /** Announce to screen readers via the app's polite live region (set up in app.js). No-op if absent. */
 function announce(msg) {
   if (typeof window.mdpAnnounce === 'function') window.mdpAnnounce(msg);
+}
+
+/**
+ * Accessibility: trap keyboard focus inside an open modal (the Pre-Live audit's deferred
+ * should-fix). Keeps Tab / Shift+Tab cycling within `dialog`, moves focus in on open, closes on
+ * Escape, and RESTORES focus to whatever was focused before the modal opened (usually the button
+ * that triggered it). Returns a wrapped `close` that also tears the trap down — call that instead
+ * of the raw remover so cleanup + focus-restore always happen.
+ *
+ * @param {HTMLElement} host    the backdrop element appended to the DOM
+ * @param {HTMLElement} dialog  the role="dialog" element inside it
+ * @param {Function}    remove  the raw close (e.g. () => host.remove())
+ * @returns {Function}  a close() that removes the modal, detaches the handler, and restores focus
+ */
+function trapFocus(host, dialog, remove) {
+  const previouslyFocused = document.activeElement;
+  const FOCUSABLE = 'a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])';
+
+  const focusable = () => Array.from(dialog.querySelectorAll(FOCUSABLE)).filter((el) => el.offsetParent !== null || el === document.activeElement);
+
+  function onKeydown(ev) {
+    if (ev.key === 'Escape') { ev.preventDefault(); close(); return; }
+    if (ev.key !== 'Tab') return;
+    const items = focusable();
+    if (!items.length) { ev.preventDefault(); return; }
+    const first = items[0];
+    const last = items[items.length - 1];
+    const active = document.activeElement;
+    if (ev.shiftKey) {
+      // Shift+Tab off the first item -> wrap to the last.
+      if (active === first || !dialog.contains(active)) { ev.preventDefault(); last.focus(); }
+    } else {
+      // Tab off the last item -> wrap to the first.
+      if (active === last || !dialog.contains(active)) { ev.preventDefault(); first.focus(); }
+    }
+  }
+
+  function close() {
+    host.removeEventListener('keydown', onKeydown, true);
+    remove();
+    // Restore focus to the trigger so keyboard users aren't dumped at the top of the page.
+    if (previouslyFocused && typeof previouslyFocused.focus === 'function') {
+      try { previouslyFocused.focus(); } catch { /* element may be gone */ }
+    }
+  }
+
+  host.addEventListener('keydown', onKeydown, true);
+  // Move focus into the dialog (first field, else the dialog itself).
+  const items = focusable();
+  if (items.length) items[0].focus();
+  else { dialog.setAttribute('tabindex', '-1'); dialog.focus(); }
+
+  return close;
 }
 
 /**
