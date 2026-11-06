@@ -1,10 +1,35 @@
-/** Menu Cards admin view — upload/import an .xlsx, review summary, list versions, activate/archive. */
+/** Menu Cards admin view — upload/import an .xlsx OR create on screen; list, activate, archive. */
 import { api, ApiError } from '../api.js';
 
 function esc(s) {
   return String(s ?? '').replace(/[&<>"']/g, (c) =>
     ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c],
   );
+}
+
+const COMPONENTS = [['CFT', 'CFT'], ['MQ', 'MQ'], ['WildFly', 'WILDFLY'], ['WLS', 'WLS']];
+const SIZES = ['TO', 'XS', 'S', 'M', 'L', 'XL', 'XXL'];
+
+/**
+ * Client-side mirror of server/menucard-calc.js (integer-pence, no float drift). Used for the LIVE
+ * preview in the create form. The server recomputes authoritatively on save from the same formulas,
+ * but we send the (possibly admin-overridden) six values and the server stores them verbatim.
+ */
+function computeVariant(pd, blendedUspRate, overheadPct) {
+  const pdN = Number(pd) || 0;
+  const rateP = Math.round((Number(blendedUspRate) || 0) * 100);
+  const ovPct = Number(overheadPct) || 0;
+  const usp = Math.round(pdN * 2 * 10000) / 10000;
+  const atom = Math.round(pdN * 1 * 10000) / 10000;
+  const uspCostP = Math.round(usp * rateP);
+  const overheadP = Math.round(uspCostP * ovPct / 100);
+  const totalP = uspCostP + overheadP;
+  return {
+    pd: Math.round(pdN * 10000) / 10000, usp, atom,
+    uspCost: Math.round(uspCostP) / 100,
+    overheadCost: Math.round(overheadP) / 100,
+    totalCost: Math.round(totalP) / 100,
+  };
 }
 
 function statusBadge(status) {
@@ -35,11 +60,25 @@ export async function renderMenuCards(view) {
       <div id="mc-summary" style="margin-top: var(--space-4);"></div>
     </div>
 
+    <div class="card" style="margin-top: var(--space-5);">
+      <div class="mc-create-head">
+        <h2 style="margin:0;">…or create a Menu Card on screen</h2>
+        <button type="button" class="btn-ghost" id="mc-create-toggle"
+                aria-expanded="false" aria-controls="mc-create-panel">Create new</button>
+      </div>
+      <p class="muted" style="margin-bottom:0;">No spreadsheet needed. Set the year's rates, then add
+        service rows — costs calculate from PD automatically (and each value stays editable for the
+        odd exception). Saves as a <strong>DRAFT</strong> you then activate.</p>
+      <div id="mc-create-panel" hidden></div>
+    </div>
+
     <div style="margin-top: var(--space-6);">
       <h2>Versions</h2>
       <div id="mc-versions">Loading…</div>
     </div>
   `;
+
+  wireCreate(view);
 
   const form = view.querySelector('#mc-form');
   const errorEl = view.querySelector('#mc-error');
@@ -209,5 +248,165 @@ async function loadVersions(view) {
     });
   } catch (e) {
     wrap.innerHTML = `<p class="form-error">Could not load versions: ${esc(e.message)}</p>`;
+  }
+}
+
+// ============================================================
+// Create a Menu Card on screen (task 9.12)
+// ============================================================
+
+let rowSeq = 0; // unique ids for dynamic rows
+
+function wireCreate(view) {
+  const toggle = view.querySelector('#mc-create-toggle');
+  const panel = view.querySelector('#mc-create-panel');
+
+  toggle.addEventListener('click', () => {
+    const open = panel.hidden;
+    panel.hidden = !open;
+    toggle.setAttribute('aria-expanded', String(open));
+    toggle.textContent = open ? 'Cancel' : 'Create new';
+    if (open && !panel.dataset.built) { buildCreateForm(view, panel); panel.dataset.built = '1'; }
+  });
+}
+
+function buildCreateForm(view, panel) {
+  panel.innerHTML = `
+    <div class="mc-create-form" style="margin-top: var(--space-4);">
+      <div class="mc-header-grid">
+        <label class="field"><span>Version label *</span><input id="cm-label" type="text" placeholder="e.g. V6" /></label>
+        <label class="field"><span>Financial year *</span><input id="cm-fy" type="text" placeholder="e.g. FY28" /></label>
+        <label class="field"><span>Blended USP rate (£) *</span><input id="cm-rate" type="number" step="0.01" min="0" value="55.56" /></label>
+        <label class="field"><span>Overhead % *</span><input id="cm-ovh" type="number" step="0.01" min="0" value="40" /></label>
+        <label class="field"><span>People-day rate (£) *</span><input id="cm-pdr" type="number" step="0.01" min="0" value="144" /></label>
+      </div>
+      <p class="muted" style="margin:var(--space-2) 0;">Rates change roughly yearly — edit them above and
+        the rows below recalculate (except any value you've overridden).</p>
+
+      <div style="overflow-x:auto;">
+        <table class="data-table mc-variant-table">
+          <thead>
+            <tr>
+              <th>Component *</th><th>Size *</th><th>Description *</th><th>PD *</th>
+              <th>USP</th><th>ATOM</th><th>TCS Cost</th><th>FTE Cost</th><th>Total</th><th></th>
+            </tr>
+          </thead>
+          <tbody id="cm-rows"></tbody>
+        </table>
+      </div>
+      <button type="button" class="btn-ghost" id="cm-add-row">+ Add service row</button>
+
+      <div id="cm-error" class="form-error" role="alert" hidden style="margin-top:var(--space-3);"></div>
+      <div id="cm-create-summary" style="margin-top:var(--space-3);"></div>
+      <div style="margin-top: var(--space-4); display:flex; gap:var(--space-3);">
+        <button type="button" class="btn-primary" id="cm-save">Save as DRAFT</button>
+      </div>
+    </div>`;
+
+  const addRow = () => {
+    const id = `r${++rowSeq}`;
+    const tr = document.createElement('tr');
+    tr.dataset.row = id;
+    tr.innerHTML = `
+      <td><select class="cm-comp" aria-label="Component">${COMPONENTS.map(([l, c]) => `<option value="${c}">${esc(l)}</option>`).join('')}</select></td>
+      <td><select class="cm-size" aria-label="Size">${SIZES.map((s) => `<option value="${s}">${s}</option>`).join('')}</select></td>
+      <td><input class="cm-desc" type="text" aria-label="Description" placeholder="Service description" /></td>
+      <td><input class="cm-pd num-cell" type="number" step="0.25" min="0" value="0" aria-label="PD" style="width:5rem;" /></td>
+      <td><input class="cm-usp num-cell" type="number" step="0.0001" aria-label="USP" style="width:5rem;" /></td>
+      <td><input class="cm-atom num-cell" type="number" step="0.0001" aria-label="ATOM" style="width:5rem;" /></td>
+      <td><input class="cm-tcs num-cell" type="number" step="0.01" aria-label="TCS Cost" style="width:6rem;" /></td>
+      <td><input class="cm-fte num-cell" type="number" step="0.01" aria-label="FTE Cost" style="width:6rem;" /></td>
+      <td><input class="cm-total num-cell" type="number" step="0.01" aria-label="Total Cost" style="width:6rem;" /></td>
+      <td><button type="button" class="btn-ghost danger cm-del" aria-label="Remove row"><span aria-hidden="true">✕</span></button></td>`;
+    panel.querySelector('#cm-rows').appendChild(tr);
+    // PD change recomputes this row's derived fields (clearing any override on those fields).
+    tr.querySelector('.cm-pd').addEventListener('input', () => recalcRow(view, panel, tr));
+    tr.querySelector('.cm-del').addEventListener('click', () => tr.remove());
+    recalcRow(view, panel, tr);
+  };
+
+  panel.querySelector('#cm-add-row').addEventListener('click', addRow);
+  addRow(); // start with one row
+
+  // Rate changes recompute every row (re-deriving from PD).
+  ['#cm-rate', '#cm-ovh'].forEach((sel) => {
+    panel.querySelector(sel).addEventListener('input', () => {
+      panel.querySelectorAll('#cm-rows tr').forEach((tr) => recalcRow(view, panel, tr));
+    });
+  });
+
+  panel.querySelector('#cm-save').addEventListener('click', () => saveCreate(view, panel));
+}
+
+/** Recompute a row's six derived fields from its PD + the current header rates. */
+function recalcRow(view, panel, tr) {
+  const rate = panel.querySelector('#cm-rate').value;
+  const ovh = panel.querySelector('#cm-ovh').value;
+  const pd = tr.querySelector('.cm-pd').value;
+  const c = computeVariant(pd, rate, ovh);
+  tr.querySelector('.cm-usp').value = c.usp;
+  tr.querySelector('.cm-atom').value = c.atom;
+  tr.querySelector('.cm-tcs').value = c.uspCost;
+  tr.querySelector('.cm-fte').value = c.overheadCost;
+  tr.querySelector('.cm-total').value = c.totalCost;
+}
+
+async function saveCreate(view, panel) {
+  const errEl = panel.querySelector('#cm-error');
+  const summaryEl = panel.querySelector('#cm-create-summary');
+  errEl.hidden = true; summaryEl.innerHTML = '';
+
+  const val = (sel) => panel.querySelector(sel).value.trim();
+  const label = val('#cm-label');
+  const financialYear = val('#cm-fy');
+  const blendedUspRate = Number(val('#cm-rate'));
+  const overheadPct = Number(val('#cm-ovh'));
+  const peopleDayRate = Number(val('#cm-pdr'));
+
+  const fail = (msg) => { errEl.textContent = msg; errEl.hidden = false; };
+  if (!label) return fail('Version label is required.');
+  if (!financialYear) return fail('Financial year is required.');
+  if (!Number.isFinite(blendedUspRate) || blendedUspRate < 0) return fail('Blended USP rate must be a number ≥ 0.');
+  if (!Number.isFinite(overheadPct) || overheadPct < 0) return fail('Overhead % must be a number ≥ 0.');
+
+  const rows = [...panel.querySelectorAll('#cm-rows tr')];
+  if (!rows.length) return fail('Add at least one service row.');
+
+  const variants = [];
+  for (let i = 0; i < rows.length; i++) {
+    const tr = rows[i];
+    const num = (c) => Number(tr.querySelector(c).value);
+    const description = tr.querySelector('.cm-desc').value.trim();
+    if (!description) return fail(`Row ${i + 1}: description is required.`);
+    const pd = num('.cm-pd');
+    if (!Number.isFinite(pd) || pd < 0) return fail(`Row ${i + 1}: PD must be a number ≥ 0.`);
+    variants.push({
+      component: tr.querySelector('.cm-comp').value,
+      size: tr.querySelector('.cm-size').value,
+      description,
+      pd,
+      usp: num('.cm-usp'),
+      atom: num('.cm-atom'),
+      uspCost: num('.cm-tcs'),
+      overheadCost: num('.cm-fte'),
+      totalCost: num('.cm-total'),
+    });
+  }
+
+  const saveBtn = panel.querySelector('#cm-save');
+  saveBtn.disabled = true; saveBtn.textContent = 'Saving…';
+  try {
+    const body = await api.post('/api/menucards', {
+      label, financialYear, blendedUspRate, overheadPct, peopleDayRate, variants,
+    });
+    summaryEl.innerHTML = `<div class="card" style="background:var(--surface-2);">
+      <p style="margin:0;"><span class="badge ok">Created</span> Staged <strong>${esc(body.version?.label)}</strong>
+      (${esc(body.version?.financialYear)}) as a DRAFT with <strong>${body.totalVariants}</strong> variants.
+      Activate it in the Versions list below.</p></div>`;
+    await loadVersions(view);
+  } catch (err) {
+    fail(err instanceof ApiError ? err.message : 'Could not create the Menu Card.');
+  } finally {
+    saveBtn.disabled = false; saveBtn.textContent = 'Save as DRAFT';
   }
 }

@@ -173,7 +173,9 @@ stays In Progress until then).
 
 ### Future build (tracked, not scheduled)
 - [ ] 9.11 **Request import pipeline** (Isaac, 2026-10-29) — consume the import-friendly JSON that the Requests export now produces (`type:mdp.requests` envelope) to **create requests** in MDP. Deliberately deferred as its own feature because it *writes records* and carries real data-safety weight: validation, duplicate JIRA handling, which fields are accepted, who the import is attributed to, whether/how to reconstruct status-transition history, and a confirm/preview step. The export format is already shaped for it (no internal MDP-XXXX / DB ids travel). Scope + confirm with Isaac before building.
-- [ ] 9.12 **On-screen Menu Card creation (form / pro-forma)** (Isaac, 2026-11-05) — add a way to **create a Menu Card on screen**, alongside the existing `.xlsx` upload, in the Menu Cards (admin) area. **Feasibility: good** — the server already exposes a clean seam, `repo/menucards.js createDraftVersion({ version, variants, … })`, which the importer merely feeds; a form would call the same function via a new `POST /api/menucards` (JSON) route, then stage a DRAFT and activate through the existing flow. The real work is the **frontend editable grid** + validation, plus two design decisions to pin down at build time:
+- [~] 9.12 **On-screen Menu Card creation (form / pro-forma)** — **BUILT (code-complete) 2026-11-06, awaiting Isaac browser sign-off.** Scope A (full form builder), calculator-with-editable-overrides, editable yearly rates. Shipped: `server/menucard-calc.js` (cost helper, integer-pence, golden MQ XL verified), `POST /api/menucards` admin route (validates header + variants, duplicate guard, stores six values verbatim, stages DRAFT via existing `createDraftVersion`, new `MENUCARD_CREATE` audit action), and a "Create new" form in `web/views/menucards.js` (editable rate header + add/remove variant rows with live cost recompute from PD, each field overridable; saves DRAFT → activate via existing flow). Tests: `test/menucard-calc.test.mjs` (+6 → suite now **44/44**: cost golden/small/zero/£144-rate, DRAFT staging, override-preserved, activation). `node --check` clean. Left room for **C** (import-then-edit) — the row-grid + cost helper are reusable. **Original feasibility note below.**
+
+  **Original feasibility note:** add a way to **create a Menu Card on screen**, alongside the existing `.xlsx` upload, in the Menu Cards (admin) area. **Feasibility: good** — the server already exposes a clean seam, `repo/menucards.js createDraftVersion({ version, variants, … })`, which the importer merely feeds; a form would call the same function via a new `POST /api/menucards` (JSON) route, then stage a DRAFT and activate through the existing flow. The real work is the **frontend editable grid** + validation, plus two design decisions to pin down at build time:
   1. **Verbatim vs calculator.** The importer stores the six values (PD/USP/ATOM/USP-cost/overhead-cost/total-cost) *as-imported, never recomputed*. The form could either (a) match that (type all six), or (b) become a **calculator** — type PD + the version's rates (blended USP rate, overhead %, people-day rate) and derive USP/costs. (b) is more work but far less error-prone and fits the engine's integer-pence discipline; likely the better choice. Decide explicitly.
   2. **Scope of the first increment.** Options discussed:
      - **A — full form builder:** version header (label/FY/3 rates) + an editable multi-row variant grid across the four components → save as DRAFT. The headline feature Isaac asked for.
@@ -181,6 +183,26 @@ stays In Progress until then).
      - **C — import-then-edit:** make a staged DRAFT's rows editable before activation (add/tweak/delete). Highest value-for-effort; fixes today's "re-import to correct anything" limitation and naturally subsumes B.
      - **D — single-variant "add one service" modal** (simplest, clunkiest for many rows).
     Recommendation: frame **A** as the goal, consider **C** as a strong first increment. **Medium-tier → do a Quick Spec** when built (new route + validation + non-trivial editable grid + the verbatim-vs-calculator call + data-safety on a core table). Reuses the activation/single-ACTIVE transaction, audit (MENUCARD_UPLOAD or a new MENUCARD_CREATE action — decide), and the DRAFT→ACTIVE lifecycle unchanged.
+
+  **QUICK SPEC — decided + building (2026-11-06):**
+  - **Mode = calculator with editable computed fields** (Isaac): row inputs = Component + Size +
+    description + **PD**; MDP derives USP=PD×2, ATOM=PD×1, USP Cost=USP×blendedRate,
+    Overhead=USP Cost×overhead%, Total=USP Cost+Overhead; **all six shown in editable fields** so an
+    admin can override any (handles "Test Only" £144 rows / irregular ATOM). Cost helper lives
+    server-side (authoritative) + mirrored client-side for live preview.
+  - **Rates are editable on the version header** (Isaac — they change ~yearly): blendedUspRate
+    (default 55.56), overheadPct (default 40), peopleDayRate (default 144), plus label + FY.
+    Changing a rate re-previews unlocked (non-overridden) rows.
+  - **Scope = A (full form builder)**, structured to leave room for **C** later (the row-grid +
+    cost helper are written as reusable pieces an "edit a DRAFT" screen can reuse).
+  - **Audit = new `MENUCARD_CREATE` action** (distinct from MENUCARD_UPLOAD).
+  - **Backend:** new admin-only `POST /api/menucards` (JSON) → validates header + variants → calls
+    existing `createDraftVersion(...)` → stages DRAFT; activate via the existing flow unchanged.
+    No `.xlsx`/file stored for created cards (hasFile=false; download shows "re-import to enable",
+    already handled).
+  - **Tests:** new `node --test` coverage — cost-helper maths (golden MQ XL: PD 54 → USP 108 /
+    ATOM 54 / USP Cost 6000.48 / Overhead 2400.19 / Total 8400.67 at 55.56/40%), create-route
+    validation, DRAFT staging, override-preserved.
 
 ## Stage 10 — NFR hardening & accessibility  **(Reqs: NFR3–NFR11)**
 - [x] 10.1 Input validation + consistent API error shape — **reviewed + confirmed DONE (2026-11-05)**. Every write route validates via the in-house `validate.js` (`requireString`/`optionalString`/`requireEnum`/`requireNumber`, length caps + labels — the dependency-free Zod equivalent), the repo layer re-validates enums (CFU/Component/Size) + business rules, and `readJsonBody` has a 15 MB size guard. Error shape is uniform: `HttpError` → `sendError` renders `{ error, message, details }` with the right status (400/401/403/404/409/500). *Minor note:* line `quantity` is validated in the repo rather than at the route — functionally covered (clean 400), left as-is to avoid churn.

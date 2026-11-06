@@ -11,9 +11,9 @@
 import { createReadStream, existsSync } from 'node:fs';
 import { readJsonBody, badRequest, notFound, conflict } from '../http-util.js';
 import { readMultipart } from '../multipart.js';
-import { optionalString } from '../validate.js';
+import { requireString, optionalString, requireNumber } from '../validate.js';
 import { requireRole } from '../auth.js';
-import { Role, AuditAction } from '../constants.js';
+import { Role, AuditAction, Component, SIZES } from '../constants.js';
 import { parseXlsx } from '../xlsx.js';
 import { parseMenuCard } from '../menucard-parser.js';
 import {
@@ -92,6 +92,102 @@ export function registerMenuCardRoutes(router) {
       warnings: parsed.warnings,
       totalVariants: parsed.variants.length,
     };
+  });
+
+  // POST /api/menucards  (admin) — CREATE a Menu Card on screen (no .xlsx) and stage it as DRAFT.
+  // Body: { label, financialYear, blendedUspRate, overheadPct, peopleDayRate, variants:[ ... ] }.
+  // Each variant carries the SIX values as submitted (the client calculates them from PD + the
+  // rates, with optional admin overrides). The server stores them verbatim — it does NOT recompute
+  // (same principle as the importer); it only VALIDATES shape, ranges, and duplicate variants.
+  router.post('/api/menucards', async ({ req, res }) => {
+    const principal = requireRole(req, res, Role.ADMINISTRATOR);
+    const body = await readJsonBody(req);
+
+    // --- header ---
+    const label = requireString(body, 'label', { max: 100, label: 'Version label' });
+    const financialYear = requireString(body, 'financialYear', { max: 20, label: 'Financial year' });
+    const blendedUspRate = requireNumber(body, 'blendedUspRate', { min: 0 });
+    const overheadPct = requireNumber(body, 'overheadPct', { min: 0, max: 1000 });
+    const peopleDayRate = requireNumber(body, 'peopleDayRate', { min: 0 });
+
+    // --- variants ---
+    const rows = Array.isArray(body.variants) ? body.variants : null;
+    if (!rows || rows.length === 0) {
+      throw badRequest('At least one service variant is required.');
+    }
+    if (rows.length > 500) throw badRequest('Too many variants (max 500).');
+
+    const components = Object.values(Component);
+    const seen = new Set();
+    const variants = rows.map((v, i) => {
+      const where = `Variant ${i + 1}`;
+      const component = v?.component;
+      if (!components.includes(component)) throw badRequest(`${where}: Component must be one of ${components.join(', ')}.`);
+      const size = v?.size;
+      if (!SIZES.includes(size)) throw badRequest(`${where}: Size must be one of ${SIZES.join(', ')}.`);
+      const description = String(v?.description ?? '').trim();
+      if (!description) throw badRequest(`${where}: Description is required.`);
+      if (description.length > 2000) throw badRequest(`${where}: Description too long (max 2000).`);
+
+      // Duplicate guard — same key the importer flags (Component+Size+Description must be unique).
+      const key = `${component}|${size}|${description.toLowerCase()}`;
+      if (seen.has(key)) throw badRequest(`${where}: duplicate variant (${component}/${size}/"${description.slice(0, 40)}…").`);
+      seen.add(key);
+
+      const numOr = (field, { min = 0 } = {}) => {
+        const n = Number(v?.[field]);
+        if (!Number.isFinite(n) || n < min) throw badRequest(`${where}: ${field} must be a number ≥ ${min}.`);
+        return n;
+      };
+
+      return {
+        component,
+        size,
+        changeCategory: size, // the workbook keeps the size in the "Change Category" column
+        description,
+        scope: v?.scope ? String(v.scope).slice(0, 5000) : null,
+        assumptions: v?.assumptions ? String(v.assumptions).slice(0, 5000) : null,
+        exclusions: v?.exclusions ? String(v.exclusions).slice(0, 5000) : null,
+        pd: numOr('pd'),
+        usp: numOr('usp'),
+        atom: numOr('atom'),
+        uspCost: numOr('uspCost'),
+        overheadCost: numOr('overheadCost'),
+        totalCost: numOr('totalCost'),
+        currentPartnerCost: v?.currentPartnerCost ? String(v.currentPartnerCost).slice(0, 200) : null,
+        effortPhases: null,
+        rowIndex: i,
+      };
+    });
+
+    // Build the counts summary (per component) like the importer does.
+    const counts = {};
+    for (const v of variants) counts[v.component] = (counts[v.component] || 0) + 1;
+
+    const version = createDraftVersion({
+      version: {
+        label,
+        financialYear,
+        sourceFilename: `${label} (created on screen)`,
+        blendedUspRate,
+        overheadPct,
+        peopleDayRate,
+      },
+      variants,
+      uploadedById: principal.id,
+      importSummary: { counts, warnings: [], createdOnScreen: true },
+      fileBuffer: null, // no .xlsx for an on-screen card (download stays disabled; re-import to enable)
+    });
+
+    writeEvent({
+      userId: principal.id,
+      action: AuditAction.MENUCARD_CREATE,
+      objectType: 'MenuCardVersion',
+      objectId: version.id,
+      detail: { label, counts, source: 'on-screen' },
+    });
+
+    return { version, counts, totalVariants: variants.length };
   });
 
   // GET /api/menucards  (admin) — list versions

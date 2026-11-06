@@ -672,3 +672,17 @@ tr.row-aging td { background: color-mix(in srgb, var(--warning) 9%, transparent)
 @media (prefers-reduced-motion: reduce) {
   svg * { transition: none !important; animation: none !important; }
 }
+
+/* ---- Menu Card on-screen create form (task 9.12) ---- */
+.mc-create-head { display: flex; align-items: center; justify-content: space-between; gap: var(--space-3); }
+.mc-header-grid {
+  display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: var(--space-3); align-items: end;
+}
+.mc-variant-table th, .mc-variant-table td { padding: var(--space-2); vertical-align: middle; }
+.mc-variant-table select, .mc-variant-table input {
+  padding: 4px 6px; border: 1px solid var(--border); border-radius: var(--radius-sm);
+  background: var(--bg); color: var(--text); font: inherit; width: 100%;
+}
+.mc-variant-table .num-cell { text-align: right; }
+.mc-variant-table .cm-del { padding: 2px 8px; }

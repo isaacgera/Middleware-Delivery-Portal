@@ -5,6 +5,44 @@ Running log of work across sessions. Newest entries at the top. Companion to the
 
 ---
 
+## 2026-11-06 (later x3) — Feature 9.12: on-screen Menu Card creation (Quick Spec → built, code-complete)
+
+Built the on-screen Menu Card creation feature as a Quick Spec. **Decisions (Isaac):** calculator
+mode with editable computed fields; the yearly **rates are editable on the version header** (they
+change ~annually); Scope **A** (full form builder), structured to leave room for **C**
+(import-then-edit) later; new **`MENUCARD_CREATE`** audit action.
+
+### What was built
+- **`server/menucard-calc.js`** — cost helper deriving the six values from PD + rates
+  (USP=PD×2, ATOM=PD×1, USP Cost=USP×blendedRate, Overhead=USP Cost×overhead%, Total=sum),
+  **integer-pence** (no float drift, mirrors engine.js). Golden MQ XL verified (PD 54 → USP 108 /
+  ATOM 54 / 6000.48 / 2400.19 / 8400.67). Preview-only: the route stores submitted values verbatim
+  (so admin overrides — e.g. "Test Only" £144 rows — survive; MDP never recomputes stored variants).
+- **`POST /api/menucards`** (admin-only, `routes/menucard-routes.js`) — validates the header (label,
+  FY, blendedUspRate, overheadPct, peopleDayRate) + each variant (component/size enums, description,
+  six numeric values, **duplicate Component+Size+Description guard**), calls the existing
+  `createDraftVersion(...)` to stage a DRAFT (no `.xlsx`; `hasFile=false`), writes `MENUCARD_CREATE`.
+  Reuses the single-ACTIVE activation + DRAFT lifecycle unchanged.
+- **Frontend** (`web/views/menucards.js`) — a collapsible "Create new" panel beside the import card:
+  editable rate header + an add/remove **variant grid**; each row takes Component/Size/description/PD
+  and shows live-computed USP/ATOM/TCS/FTE/Total (client mirror of the cost helper), **every value
+  editable** for overrides; changing a rate re-previews rows; saves → DRAFT → activate in the
+  Versions list. Small CSS added (header grid + variant table).
+- **`MENUCARD_CREATE`** added to `constants.js` AuditAction.
+- **Tests:** `test/menucard-calc.test.mjs` (+6) — cost golden/small/zero/£144, DRAFT staging,
+  override-preserved, created-DRAFT activates. **Suite 38 → 44, all green.**
+
+### Verified
+`node --check` clean on all changed/new JS; **44/44** `node --test`. Cost golden match confirmed
+independently. **Browser sign-off pending from Isaac** (serve locally, Menu Cards tab → "Create new"
+→ add rows, watch costs compute, save DRAFT, activate). Import path untouched.
+
+### Status
+**9.12 code-complete, awaiting browser sign-off.** Independent of the BT deployment. Tracked future
+still open: 9.11 import pipeline; Entra ID 2.7; lower-value a11y polish.
+
+---
+
 ## 2026-11-06 (later still) — a11y: modal focus-trap (closes the highest-value deferred Stage-10 item)
 
 While deployment waits on the BT server, picked off an independent, session-completable feature:
