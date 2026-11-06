@@ -41,8 +41,11 @@ preview-then-commit; admin-only.
 - **Committed:** backend `cc217b8` (pushed to all 3 remotes), frontend `c4d84ea`.
 
 ### Status
-**9.11 code-complete, awaiting Isaac browser sign-off** (serve sample DB → Requests → Import… →
-load a JSON export produced by Export ▾ → JSON → preview → import). Independent of BT deployment.
+**9.11 DONE — browser-verified by Isaac (2026-11-06):** re-import of an existing export flagged all
+~90 as duplicates (nothing created — skip-safety confirmed); importing edited/new JIRAs created
+header-only requests with status preserved. (Note during test: the "No route for POST
+/api/estimates/import" error was just the stale pre-route server process — a restart fixed it, per
+the standing stale-process discipline.) Independent of BT deployment.
 
 ---
 
