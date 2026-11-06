@@ -19,10 +19,11 @@
  * the repo and never surfaced here. Writes ESTIMATE_CREATE / ESTIMATE_MODIFY / ESTIMATE_DELETE.
  */
 import { readJsonBody, notFound, badRequest } from '../http-util.js';
-import { requireAuth } from '../auth.js';
+import { requireAuth, requireRole } from '../auth.js';
 import { requireString, optionalString, requireEnum } from '../validate.js';
-import { AuditAction, EstimateStatus } from '../constants.js';
+import { AuditAction, EstimateStatus, Role } from '../constants.js';
 import { getActiveVersion } from '../repo/menucards.js';
+import { previewImport, commitImport } from '../repo/request-import.js';
 import {
   createEstimate,
   cloneEstimate,
@@ -104,6 +105,34 @@ export function registerEstimateRoutes(router) {
       detail: { jiraReference: estimate.jiraReference, customerName: estimate.customerName },
     });
     return estimate;
+  });
+
+  // POST /api/estimates/import — bulk-import requests from an mdp.requests export (ADMIN only).
+  // ?mode=preview (default) classifies rows and writes NOTHING; ?mode=commit creates the
+  // importable ones (header-only, status preserved, attributed to the importing admin). Task 9.11.
+  router.post('/api/estimates/import', async ({ req, res, query }) => {
+    const principal = requireRole(req, res, Role.ADMINISTRATOR);
+    const payload = await readJsonBody(req);
+    const mode = (query.get('mode') || 'preview').toLowerCase();
+
+    if (mode === 'preview') {
+      return previewImport(payload);
+    }
+    if (mode === 'commit') {
+      const result = commitImport(payload, principal.id);
+      // One ESTIMATE_CREATE per created request, flagged as imported for a clean audit trail.
+      for (const row of result.created) {
+        writeEvent({
+          userId: principal.id,
+          action: AuditAction.ESTIMATE_CREATE,
+          objectType: 'Estimate',
+          objectId: row.id,
+          detail: { imported: true, sourceJira: row.jira, status: row.status },
+        });
+      }
+      return result;
+    }
+    throw badRequest('mode must be "preview" or "commit"');
   });
 
   // GET /api/estimates/:id — full request with lines + computed totals
