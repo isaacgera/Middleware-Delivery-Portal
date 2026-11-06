@@ -1,0 +1,46 @@
+# MDP CI pipeline (dependency-free track) — BT GitLab.
+#
+# The live app in app/ uses ONLY Node built-ins (no npm install, no node_modules), so CI needs
+# nothing but a Node 22+ image. If your BT GitLab runners can't pull the public node image, point
+# `image:` at the equivalent from BT's internal container registry (same tag).
+#
+# There is intentionally no `npm install` / build-bundle step — the frontend is vanilla static
+# files served by the Node server, and there are no dependencies to fetch.
+#
+# NOTE: the parked npm/Prisma stack in _parked-npm-stack/ is NOT built here (it's the alternate
+# "npm + Postgres/SQL Server" track, revived only if BT ever allows a Nexus registry — see
+# _parked-npm-stack/README-PARKED.md and SPEC-design.md §8). This pipeline is the live track.
+
+image: node:22
+
+stages:
+  - check
+  - test
+
+# Syntax-check every server + frontend JS file (the dependency-free equivalent of a lint gate).
+syntax-check:
+  stage: check
+  script:
+    - node --version
+    - echo "Syntax-checking server + web JS..."
+    - |
+      for f in $(find app/server app/web -name '*.js' -o -name '*.mjs'); do
+        echo "  check $f"
+        node --check "$f"
+      done
+    - node --check app/run-tests.mjs
+    - node --check app/backup-db.mjs
+  rules:
+    - if: '$CI_PIPELINE_SOURCE == "merge_request_event"'
+    - if: '$CI_COMMIT_BRANCH'
+
+# Run the durable node --test suite. Exits non-zero on any failing test (run-tests.mjs sets the
+# exit code), so a red suite fails the pipeline. Uses throwaway temp SQLite DBs — never real data.
+unit-tests:
+  stage: test
+  script:
+    - node --version
+    - node app/run-tests.mjs
+  rules:
+    - if: '$CI_PIPELINE_SOURCE == "merge_request_event"'
+    - if: '$CI_COMMIT_BRANCH'

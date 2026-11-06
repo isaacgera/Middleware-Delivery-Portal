@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Middleware Delivery Portal — User Guide</title>
+<style>
+  :root{--bg:#f6f7f9;--surface:#fff;--border:#d9dde3;--text:#1a2430;--muted:#5a6675;--primary:#0a66c2;}
+  @media (prefers-color-scheme:dark){:root{--bg:#12171e;--surface:#1a212b;--border:#2e3844;--text:#e8edf3;--muted:#a9b4c0;--primary:#4a9eea;}}
+  *{box-sizing:border-box}
+  body{font-family:'Segoe UI',system-ui,-apple-system,sans-serif;background:var(--bg);color:var(--text);line-height:1.6;max-width:860px;margin:0 auto;padding:1.5rem}
+  h1{color:var(--primary);font-size:1.6rem;margin-bottom:.2rem}
+  h2{font-size:1.2rem;margin-top:1.8rem;border-bottom:1px solid var(--border);padding-bottom:.3rem}
+  h3{font-size:1rem;margin-top:1.2rem}
+  .sub{color:var(--muted);margin-bottom:1.2rem}
+  .card{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:1rem 1.2rem;margin:1rem 0;box-shadow:0 1px 3px rgba(16,24,40,.08)}
+  ol,ul{padding-left:1.2rem}
+  li{margin:.3rem 0}
+  code{background:rgba(10,102,194,.12);padding:1px 6px;border-radius:4px;font-size:.9em}
+  .tip{border-left:3px solid var(--primary);padding-left:.8rem;color:var(--muted);margin:.8rem 0}
+  .role{display:inline-block;font-size:.72rem;font-weight:600;border-radius:999px;padding:1px 8px;margin-left:.3rem}
+  .role.admin{color:#8e44ad;border:1px solid #8e44ad}
+  .role.both{color:var(--primary);border:1px solid var(--primary)}
+  .toc a{color:var(--primary);text-decoration:none}
+  .toc a:hover{text-decoration:underline}
+  footer{margin-top:2rem;padding-top:1rem;border-top:1px solid var(--border);text-align:center;color:var(--muted);font-size:.75rem}
+  footer .brand{color:var(--primary);font-weight:600;display:block}
+</style>
+</head>
+<body>
+  <h1>Middleware Delivery Portal</h1>
+  <div class="sub">User Guide — Phase 1 (Estimation &amp; Planning)</div>
+
+  <div class="card">
+    <p style="margin-top:0;">MDP is a shared web app for estimating and costing middleware work. You sign in, build
+    <strong>Requests</strong> from an approved <strong>Menu Card</strong>, and produce customer-ready PDFs — all with
+    governance, versioning and a full audit trail. This guide walks through everything you can do.</p>
+    <p style="margin-bottom:0;"><strong>Roles:</strong> a feature marked <span class="role both">Both</span> is available to everyone;
+    <span class="role admin">Admin</span> means Administrator-only. Administrators can do everything a Delivery Manager can, plus manage Menu Cards and view the full audit log.</p>
+  </div>
+
+  <div class="card toc">
+    <strong>Contents</strong>
+    <ul>
+      <li><a href="#signin">1. Signing in</a></li>
+      <li><a href="#home">2. Finding your way around</a></li>
+      <li><a href="#catalogue">3. The Product Catalogue</a></li>
+      <li><a href="#requests">4. Requests — the core workflow</a></li>
+      <li><a href="#lines">5. Line items &amp; live totals</a></li>
+      <li><a href="#status">6. Status, Archive &amp; Cancel</a></li>
+      <li><a href="#pdf">7. Exporting a customer PDF</a></li>
+      <li><a href="#clone">8. Cloning &amp; editing a request</a></li>
+      <li><a href="#dashboards">9. Dashboards</a></li>
+      <li><a href="#analytics">10. Analytics</a></li>
+      <li><a href="#menucards">11. Menu Cards (Admin)</a></li>
+      <li><a href="#audit">12. Audit / History</a></li>
+      <li><a href="#tips">13. Tips, themes &amp; accessibility</a></li>
+    </ul>
+  </div>
+
+  <h2 id="signin">1. Signing in</h2>
+  <ol>
+    <li>Open the portal’s address in your browser.</li>
+    <li>Enter your <strong>username and password</strong> and sign in.</li>
+    <li>Your session stays active while you’re using it and signs you out automatically after a period of inactivity (about 30 minutes) — just sign in again.</li>
+  </ol>
+  <p class="tip">You can change your own password from the account controls. If you’re locked out or need an account, ask an Administrator.</p>
+
+  <h2 id="home">2. Finding your way around</h2>
+  <p>The top bar has the navigation (<strong>Home, Requests, Catalogue, Dashboards, Analytics</strong>, plus <strong>Menu Cards</strong> and <strong>Audit</strong> for admins), your name and role, a sign-out button, and a theme toggle. <strong>Home</strong> shows a quick API/health check so you know the app is connected.</p>
+
+  <h2 id="catalogue">3. The Product Catalogue <span class="role both">Both</span></h2>
+  <p>The Catalogue shows every service in the <strong>currently active</strong> Menu Card.</p>
+  <ul>
+    <li><strong>Component / Size pills</strong> — click to filter (e.g. MQ, XL); combine them; “All” clears that row.</li>
+    <li><strong>Search</strong> — type anything (a word from a service, a size, a cost) to match across all columns.</li>
+    <li><strong>Open a row</strong> (click, or focus with the keyboard and press Enter) to see the full detail: Story Points, ATOM, PD, TCS/FTE/Total cost, and any scope / assumptions / exclusions.</li>
+  </ul>
+  <p class="tip">The Catalogue is read-only — it’s the master price list. You turn its services into costed lines inside a Request (next section).</p>
+
+  <h2 id="requests">4. Requests — the core workflow <span class="role both">Both</span></h2>
+  <p>A <strong>Request</strong> is one estimate. Open <strong>Requests</strong> for the list; use the search box, the per-column filters, the created-date range, and the pager to find one. Click a row (or its <strong>Open</strong> link) to work on it.</p>
+  <h3>Create a request</h3>
+  <ol>
+    <li>Click <strong>Add Request</strong>.</li>
+    <li>Fill the mandatory fields: <strong>JIRA Reference</strong> (your own unique handle — it must not already exist), <strong>Summary</strong>, <strong>Customer</strong>, <strong>CFU</strong>, <strong>Approver</strong>, and the <strong>Component</strong> + <strong>Size</strong>. Optionally add External Ref, IP Code, IO Reference and Remarks.</li>
+    <li>Click <strong>Create</strong>. The request opens, pinned to the active Menu Card.</li>
+  </ol>
+  <p class="tip">The Component + Size you pick <strong>scope</strong> the request — you can only add catalogue services that match them. This keeps every line consistent with the estimate’s shape.</p>
+
+  <h2 id="lines">5. Line items &amp; live totals <span class="role both">Both</span></h2>
+  <ol>
+    <li>On the request, click <strong>Add from catalogue</strong>. The picker shows only the services matching this request’s Component + Size.</li>
+    <li>Click <strong>Add</strong> on a service. It becomes a line, and its figures are <strong>snapshotted</strong> — locked in at that moment.</li>
+    <li>Change a line’s <strong>Quantity</strong> and the totals update live. Use the <strong>duplicate</strong> (⧉) or <strong>delete</strong> (✕) buttons on a line as needed.</li>
+  </ol>
+  <p class="tip"><strong>Why snapshots matter:</strong> if the Menu Card is re-imported or changed later, an existing request’s numbers <em>never</em> move. What you quoted is what stays. The totals strip (Lines, PD, Story Points, ATOM, TCS, FTE, Grand Total) always reflects the current lines, calculated exactly.</p>
+
+  <h2 id="status">6. Status, Archive &amp; Cancel <span class="role both">Both</span></h2>
+  <p>Use the <strong>Status</strong> dropdown on a request to move it through <strong>New → Pending → Approved → In Progress → Done</strong>. You can set any status at any time — there’s no forced order.</p>
+  <ul>
+    <li><strong>Archive</strong> — tucks a request out of the default list (find it again with <strong>Show archived</strong>). Un-archive to bring it back.</li>
+    <li><strong>Cancel</strong> — for a request that’s stopped. You can’t cancel one that’s already Done or Archived, and a cancelled request must be <em>revived</em> to an active status before it can go to Done/Archived.</li>
+  </ul>
+
+  <h2 id="pdf">7. Exporting a customer PDF <span class="role both">Both</span></h2>
+  <p>From a request’s <strong>Actions</strong> menu:</p>
+  <ul>
+    <li><strong>Preview</strong> — opens the estimate PDF in a new tab (nothing is recorded).</li>
+    <li><strong>Export</strong> — generates the PDF and delivers it: a <strong>download</strong> on desktop, or the <strong>share sheet</strong> on mobile (WhatsApp, Save to Files, etc.). Each export is recorded in the audit log.</li>
+  </ul>
+  <p class="tip">The PDF is the customer-facing document — a clean summary plus the cost figures, carrying the Forjé footer. (That footer is intentional on the PDF; it’s hidden if you ever just print the web page itself.)</p>
+
+  <h2 id="clone">8. Cloning &amp; editing a request <span class="role both">Both</span></h2>
+  <ul>
+    <li><strong>Clone</strong> (Actions menu) makes a full copy — a fresh reference, a derived <code>-COPY</code> JIRA reference, status reset to New, and every line copied with its snapshot figures intact. The copy opens so you can rename its JIRA reference.</li>
+    <li><strong>Edit</strong> (Actions menu) changes the header fields. Note: <strong>Component and Size are locked while any lines exist</strong> (remove the lines first if you must change them — otherwise the lines wouldn’t match).</li>
+    <li><strong>Delete</strong> removes the request (with a confirmation). This can’t be undone.</li>
+  </ul>
+
+  <h2 id="dashboards">9. Dashboards <span class="role both">Both</span></h2>
+  <p>The Dashboards view summarises all requests under a <strong>filter bar</strong> (CFU / Component / Status / date range). You get headline KPI cards (total cost with TCS/FTE split, request counts, USP, active CFUs), charts (donuts for product &amp; CFU share, a monthly timeline, bars for status &amp; size) and revenue-share tables. Change a filter and everything re-scopes. You can <strong>Export</strong> the current filtered summary as PDF or CSV.</p>
+
+  <h2 id="analytics">10. Analytics <span class="role both">Both</span></h2>
+  <p>The Analytics view reconstructs how work actually flows, from each request’s history:</p>
+  <ul>
+    <li><strong>Throughput</strong> — requests reaching Done per month.</li>
+    <li><strong>Cycle time</strong> — how long from Created→Done (and Approved→Done).</li>
+    <li><strong>Dwell &amp; aging</strong> — how long requests sit in each status; which open ones are aging past a threshold you can set.</li>
+    <li><strong>Run-rate</strong> — a plain, honest projection of how long the committed backlog will take, with the assumptions shown. It’s a guide, not a forecast.</li>
+  </ul>
+  <p>Use <strong>Filter</strong> mode to scope the metrics, or <strong>Compare</strong> mode to break them down by component, size, CFU or customer.</p>
+
+  <h2 id="menucards">11. Menu Cards <span class="role admin">Admin</span></h2>
+  <p>Administrators manage the master price list under <strong>Menu Cards</strong>.</p>
+  <ol>
+    <li><strong>Import</strong> the Menu Card <code>.xlsx</code> (set the financial year). MDP parses the component tabs and stages it as a <strong>Draft</strong>, showing counts and any warnings.</li>
+    <li>Review the draft, then <strong>Activate</strong> it. Activation is atomic: the new version becomes <strong>Active</strong> and whatever was active is <strong>Archived</strong> — there is always exactly one active card.</li>
+    <li>You can re-activate an archived version, edit a version’s label / financial year, download the original uploaded file, or delete a version (unless it’s active or referenced by a request).</li>
+  </ol>
+  <p class="tip">The as-imported effort/cost values are never editable in place — to correct them, re-import a corrected workbook. Existing requests keep their snapshots regardless.</p>
+
+  <h2 id="audit">12. Audit / History</h2>
+  <ul>
+    <li><span class="role admin">Admin</span> <strong>Audit</strong> — the full log across all users, filterable by action, user and date range.</li>
+    <li><span class="role both">Both</span> <strong>History</strong> — for non-admins, your own activity only.</li>
+  </ul>
+  <p>Logged events include sign-in/out, Menu Card upload &amp; activation, and request create / modify / delete / export. The log is append-only — entries are never edited or removed.</p>
+
+  <h2 id="tips">13. Tips, themes &amp; accessibility</h2>
+  <ul>
+    <li><strong>Theme</strong> — the toggle (top-right) cycles follow-system / light / dark and remembers your choice.</li>
+    <li><strong>Keyboard</strong> — everything is operable by keyboard: a “Skip to main content” link on first Tab, focusable rows and menus, and visible focus outlines.</li>
+    <li><strong>Screen readers</strong> — actions like changing a status or adding a line are announced; icon-only buttons are labelled.</li>
+    <li><strong>Mobile</strong> — the layout adapts to small screens; the PDF export uses the native share sheet.</li>
+    <li><strong>Your data is safe</strong> — figures can’t drift (snapshots), the active Menu Card is always singular, and every change is audited.</li>
+  </ul>
+
+  <footer>
+    <span class="brand">Powered by Forjé</span>
+    © 2026 Isaac A Gera. All rights reserved.
+  </footer>
+</body>
+</html>

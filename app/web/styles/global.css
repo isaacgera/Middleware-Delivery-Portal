@@ -1,0 +1,674 @@
+/* Global base styles built on the design tokens. */
+
+* { box-sizing: border-box; }
+
+html, body { height: 100%; margin: 0; }
+
+body {
+  font-family: var(--font-sans);
+  font-size: var(--fs-base);
+  color: var(--text);
+  background: var(--bg);
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+}
+
+a { color: var(--primary); text-decoration: none; }
+a:hover { text-decoration: underline; }
+
+:focus-visible { outline: 2px solid var(--primary); outline-offset: 2px; }
+
+button { font: inherit; cursor: pointer; }
+
+h1 { font-size: var(--fs-xl); margin: 0 0 var(--space-2); }
+h2 { font-size: var(--fs-lg); }
+
+.app-shell { display: flex; flex-direction: column; min-height: 100%; }
+
+.app-header {
+  display: flex; align-items: center; justify-content: space-between;
+  gap: var(--space-4); padding: var(--space-3) var(--space-5);
+  background: var(--surface); border-bottom: 1px solid var(--border);
+  box-shadow: var(--shadow-1);
+}
+.app-brand { font-size: var(--fs-lg); font-weight: 700; color: var(--text); }
+.app-brand span { color: var(--primary); }
+
+.app-header-right { display: flex; align-items: center; gap: var(--space-3); flex-wrap: wrap; }
+
+.app-nav { display: flex; gap: var(--space-2); flex-wrap: wrap; }
+
+.theme-toggle {
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 2.1rem; height: 2.1rem; padding: 0;
+  border: 1px solid var(--border); border-radius: var(--radius-sm);
+  background: var(--surface-2); color: var(--text); font-size: 1rem; line-height: 1;
+  transition: background var(--transition), border-color var(--transition),
+    transform var(--transition);
+}
+.theme-toggle:hover { border-color: var(--primary); transform: translateY(-1px); }
+.theme-toggle:active { transform: translateY(0); }
+.app-nav a {
+  padding: var(--space-2) var(--space-3); border-radius: var(--radius-sm);
+  color: var(--text-light);
+  transition: background var(--transition), color var(--transition);
+}
+.app-nav a:hover { background: var(--surface-2); text-decoration: none; }
+.app-nav a.active { color: var(--primary); background: var(--surface-2); font-weight: 600; }
+
+.app-main {
+  flex: 1; width: 100%; max-width: 1200px; margin: 0 auto; padding: var(--space-5);
+}
+/* #view is programmatically focused on route change for screen-reader/keyboard users; it should
+   not draw an outline box itself (individual controls still get :focus-visible rings). */
+.app-main:focus { outline: none; }
+
+.app-footer {
+  margin-top: var(--space-6); padding: var(--space-4) 0 var(--space-3);
+  border-top: 1px solid var(--border); text-align: center;
+  color: var(--text-light); font-size: 0.72rem; line-height: 1.6;
+  display: flex; flex-direction: column; gap: 0.1rem;
+}
+.app-footer-brand { color: var(--primary); font-weight: 600; letter-spacing: 0.2px; }
+.app-footer-copy { opacity: 0.85; }
+
+.card {
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: var(--radius); box-shadow: var(--shadow-1); padding: var(--space-5);
+}
+
+.badge {
+  display: inline-block; padding: 0.1rem 0.5rem; border-radius: 999px;
+  font-size: var(--fs-sm); background: var(--surface-2);
+  color: var(--text-light); border: 1px solid var(--border);
+}
+.badge.ok { color: var(--success); }
+.badge.warn { color: var(--warning); }
+
+.muted { color: var(--text-light); }
+
+.proto-banner {
+  background: var(--warning); color: #fff; text-align: center;
+  font-size: var(--fs-sm); padding: var(--space-1) var(--space-3);
+}
+
+@media (min-width: 900px) {
+  .app-main { padding: var(--space-6); }
+}
+
+/* ---- Auth: login form + header user area (Stage 2) ---- */
+
+.login-wrap {
+  display: flex; justify-content: center; align-items: flex-start;
+  padding-top: var(--space-6);
+}
+.login-card { width: 100%; max-width: 380px; display: flex; flex-direction: column; gap: var(--space-4); }
+
+.field { display: flex; flex-direction: column; gap: var(--space-1); }
+.field span { font-size: var(--fs-sm); color: var(--text-light); }
+.field input {
+  padding: var(--space-2) var(--space-3);
+  border: 1px solid var(--border); border-radius: var(--radius-sm);
+  background: var(--bg); color: var(--text); font: inherit;
+  transition: border-color var(--transition);
+}
+.field input:focus { border-color: var(--primary); outline: none; }
+
+.btn-primary {
+  padding: var(--space-3) var(--space-4);
+  background: var(--primary); color: var(--primary-contrast);
+  border: 1px solid var(--primary); border-radius: var(--radius-sm);
+  font-weight: 600;
+  transition: background var(--transition), transform var(--transition);
+}
+.btn-primary:hover:not(:disabled) { background: var(--primary-hover); transform: translateY(-1px); }
+.btn-primary:disabled { opacity: 0.6; cursor: default; }
+
+.form-error {
+  padding: var(--space-2) var(--space-3);
+  border: 1px solid var(--danger); border-radius: var(--radius-sm);
+  color: var(--danger); background: color-mix(in srgb, var(--danger) 10%, transparent);
+  font-size: var(--fs-sm);
+}
+.login-hint { font-size: var(--fs-sm); margin-bottom: 0; }
+
+/* header user chip + logout */
+.user-chip { display: flex; align-items: center; gap: var(--space-2); }
+.user-chip .user-name { font-weight: 600; font-size: var(--fs-sm); }
+.user-chip .user-role {
+  font-size: 0.68rem; text-transform: uppercase; letter-spacing: 0.4px;
+  color: var(--primary); border: 1px solid var(--border);
+  padding: 0.05rem 0.4rem; border-radius: 999px;
+}
+.btn-ghost {
+  padding: var(--space-1) var(--space-3);
+  background: transparent; color: var(--text-light);
+  border: 1px solid var(--border); border-radius: var(--radius-sm);
+  font-size: var(--fs-sm);
+  transition: border-color var(--transition), color var(--transition);
+}
+.btn-ghost:hover { border-color: var(--primary); color: var(--primary); }
+
+/* ---- Data table (Menu Card versions, catalogue, etc.) ---- */
+.data-table {
+  width: 100%;
+  border-collapse: collapse;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  overflow: hidden;
+  font-size: var(--fs-sm);
+}
+.data-table th,
+.data-table td {
+  text-align: left;
+  padding: var(--space-2) var(--space-3);
+  border-bottom: 1px solid var(--border);
+  vertical-align: top;
+}
+.data-table thead th {
+  background: var(--surface-2);
+  color: var(--text-light);
+  font-weight: 600;
+  white-space: nowrap;
+}
+.data-table tbody tr:last-child td { border-bottom: none; }
+.data-table tbody tr:hover { background: var(--surface-2); }
+.data-table .btn-ghost { margin-right: var(--space-1); }
+
+/* anchor styled as a ghost button (e.g. Download link) */
+a.btn-ghost { display: inline-block; text-decoration: none; }
+a.btn-ghost:hover { text-decoration: none; }
+
+/* ---- Catalogue (Stage 4) ---- */
+/* Two-column control panel: filters (left, grows) + search/meta (right, fixed-ish). */
+.cat-controls {
+  display: flex;
+  gap: var(--space-5);
+  align-items: flex-start;
+  flex-wrap: wrap;
+}
+.cat-controls-left { flex: 1 1 400px; min-width: 280px; }
+.cat-controls-right {
+  flex: 0 1 300px;
+  min-width: 220px;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+.cat-controls-right .field { width: 100%; }
+.cat-controls-right input {
+  padding: var(--space-2) var(--space-3);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--bg);
+  color: var(--text);
+  font: inherit;
+  width: 100%;
+}
+.cat-controls-meta {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  font-size: var(--fs-sm);
+}
+
+/* key-value detail table */
+table.kv { border-collapse: collapse; margin: var(--space-3) 0; width: 100%; max-width: 480px; }
+table.kv th,
+table.kv td {
+  text-align: left;
+  padding: var(--space-2) var(--space-3);
+  border-bottom: 1px solid var(--border);
+}
+table.kv th { color: var(--text-light); font-weight: 600; width: 55%; }
+.cat-detail h3 { font-size: var(--fs-base); margin: var(--space-4) 0 var(--space-1); }
+
+/* ---- Filter pills (catalogue) ---- */
+.pill-group { display: flex; align-items: flex-start; gap: var(--space-3); flex-wrap: wrap; }
+.pill-label {
+  font-size: var(--fs-sm); color: var(--text-light); font-weight: 600;
+  min-width: 80px; padding-top: 0.35rem;
+}
+.pills { display: flex; flex-wrap: wrap; gap: var(--space-2); flex: 1; }
+.pill {
+  padding: 0.3rem 0.8rem;
+  border: 1px solid var(--border); border-radius: 999px;
+  background: var(--surface); color: var(--text-light);
+  font-size: var(--fs-sm); line-height: 1.4;
+  transition: background var(--transition), color var(--transition), border-color var(--transition);
+}
+.pill:hover { border-color: var(--primary); color: var(--primary); }
+.pill.active {
+  background: var(--primary); color: var(--primary-contrast);
+  border-color: var(--primary); font-weight: 600;
+}
+
+/* ---- Estimates (Stage 5) ---- */
+.est-list-head,
+.est-lines-head {
+  display: flex; align-items: center; justify-content: space-between;
+  gap: var(--space-4); flex-wrap: wrap;
+}
+.est-lines-head { margin-top: var(--space-6); }
+.est-list-head-actions { display: inline-flex; align-items: center; gap: var(--space-3); }
+
+.est-filters { display: flex; gap: var(--space-4); flex-wrap: wrap; }
+.est-filters .field { min-width: 180px; }
+.est-filters select,
+.est-filters input {
+  padding: var(--space-2) var(--space-3);
+  border: 1px solid var(--border); border-radius: var(--radius-sm);
+  background: var(--bg); color: var(--text); font: inherit;
+}
+
+/* status badges — New / Pending / Approved / In Progress / Done */
+.badge.status-NEW { color: var(--text-light); }
+.badge.status-PENDING { color: var(--warning); border-color: var(--warning); }
+.badge.status-APPROVED { color: var(--success); border-color: var(--success); }
+.badge.status-IN_PROGRESS { color: var(--primary); border-color: var(--primary); }
+.badge.status-DONE { color: var(--muted); }
+/* Archived — muted + dashed edge to read as "set aside" without competing with active states */
+.badge.status-ARCHIVED { color: var(--text-light); border-style: dashed; opacity: .85; }
+/* Cancelled — danger tone, to read clearly as "stopped" */
+.badge.status-CANCELLED { color: var(--danger); border-color: var(--danger); }
+/* The "Cancelled" option in the status dropdown reads as a danger action */
+.actions-list [role="menuitemradio"].status-opt-cancel { color: var(--danger); }
+
+/* builder header */
+.est-head {
+  display: flex; align-items: flex-start; justify-content: space-between;
+  gap: var(--space-4); flex-wrap: wrap; margin-top: var(--space-3);
+}
+.est-head-actions { display: flex; align-items: center; gap: var(--space-3); flex-wrap: wrap; }
+.btn-ghost.danger { color: var(--danger); }
+.btn-ghost.danger:hover { border-color: var(--danger); color: var(--danger); }
+
+/* ---- Status + Actions dropdown menus (request builder header) ---- */
+/* Default menu width; the builder header overrides it so Status + Actions match as a pair. */
+.actions-menu { --menu-w: 150px; position: relative; display: inline-block; }
+.est-head-actions .actions-menu { --menu-w: 188px; }
+.actions-toggle {
+  display: inline-flex; align-items: center; justify-content: space-between; gap: var(--space-2);
+  width: var(--menu-w);
+}
+.status-toggle-label { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.actions-caret { font-size: .7em; line-height: 1; transition: transform 150ms ease-out; }
+.actions-toggle[aria-expanded="true"] .actions-caret { transform: rotate(180deg); }
+
+/* Disabled Status toggle (archived request) — matches the solid button, dimmed. */
+.actions-toggle:disabled { opacity: .6; cursor: not-allowed; }
+
+.actions-list {
+  position: absolute; top: calc(100% + 4px); right: 0; z-index: 30;
+  width: var(--menu-w); padding: 4px;
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: var(--radius-sm); box-shadow: 0 4px 14px rgba(0, 0, 0, .12);
+  flex-direction: column;
+}
+/* The `hidden` attribute must win — an explicit display would otherwise override it and the
+   menu would always show. Only lay it out as a flex column when it is NOT hidden. */
+.actions-list:not([hidden]) { display: flex; }
+.actions-list [role^="menuitem"] {
+  width: 100%; text-align: left; padding: 6px 12px;
+  background: transparent; border: 0; border-radius: var(--radius-sm);
+  color: var(--text); font: inherit; font-size: var(--fs-sm); line-height: 1.4; cursor: pointer;
+  transition: background 120ms ease-out, color 120ms ease-out;
+}
+.actions-list [role^="menuitem"]:hover,
+.actions-list [role^="menuitem"]:focus-visible {
+  background: var(--bg); outline: none;
+}
+/* Current status gets a subtle marker so the active choice is obvious. */
+.actions-list [role="menuitemradio"].is-current { font-weight: 600; color: var(--primary); }
+.actions-list [role="menuitem"].danger { color: var(--danger); }
+.actions-list [role="menuitem"].danger:hover,
+.actions-list [role="menuitem"].danger:focus-visible { background: var(--danger); color: #fff; }
+.actions-divider { height: 1px; background: var(--border); margin: 4px 0; }
+
+/* totals strip */
+.totals-strip {
+  margin-top: var(--space-4);
+  display: flex; flex-wrap: wrap; gap: var(--space-5);
+  padding: var(--space-4) var(--space-5);
+}
+.total-cell { display: flex; flex-direction: column; gap: 2px; min-width: 90px; }
+.total-label { font-size: var(--fs-sm); color: var(--text-light); }
+.total-value { font-size: var(--fs-lg); font-weight: 600; }
+.total-value.grand { color: var(--primary); }
+
+/* line grid tweaks */
+.est-lines-table .qty-input {
+  width: 72px; padding: var(--space-1) var(--space-2);
+  border: 1px solid var(--border); border-radius: var(--radius-sm);
+  background: var(--bg); color: var(--text); font: inherit;
+}
+.est-lines-table .line-actions { white-space: nowrap; }
+
+/* picker */
+.est-picker-head {
+  display: flex; align-items: center; gap: var(--space-3);
+  flex-wrap: wrap; margin-bottom: var(--space-4);
+}
+.est-picker-head input {
+  flex: 1; min-width: 180px;
+  padding: var(--space-2) var(--space-3);
+  border: 1px solid var(--border); border-radius: var(--radius-sm);
+  background: var(--bg); color: var(--text); font: inherit;
+}
+
+/* lightweight modal */
+.est-modal-backdrop {
+  position: fixed; inset: 0; z-index: 50;
+  background: rgba(16, 24, 40, 0.45);
+  display: flex; align-items: flex-start; justify-content: center;
+  padding: var(--space-6) var(--space-4); overflow-y: auto;
+}
+.est-modal { width: 100%; max-width: 440px; display: flex; flex-direction: column; gap: var(--space-3); }
+.est-modal textarea {
+  padding: var(--space-2) var(--space-3);
+  border: 1px solid var(--border); border-radius: var(--radius-sm);
+  background: var(--bg); color: var(--text); font: inherit; resize: vertical;
+}
+.est-modal-actions { display: flex; justify-content: flex-end; gap: var(--space-3); margin-top: var(--space-2); }
+
+/* ---- Requests: wider modal + two-column form grid ---- */
+.est-modal-wide { max-width: 720px; }
+.est-form-grid {
+  display: grid; grid-template-columns: 1fr 1fr; gap: var(--space-3) var(--space-4);
+}
+.est-form-grid .field { min-width: 0; }
+.est-form-grid .est-form-full { grid-column: 1 / -1; }
+.est-form-grid select,
+.est-form-grid input,
+.est-form-grid textarea {
+  padding: var(--space-2) var(--space-3);
+  border: 1px solid var(--border); border-radius: var(--radius-sm);
+  background: var(--bg); color: var(--text); font: inherit; resize: vertical;
+}
+.est-form-grid select:disabled { opacity: .6; cursor: not-allowed; }
+@media (max-width: 560px) {
+  .est-form-grid { grid-template-columns: 1fr; }
+}
+
+/* ---- Request meta strip (External Ref / IP Code / IO Reference / Remarks) ---- */
+.est-meta {
+  margin-top: var(--space-4);
+  display: flex; flex-wrap: wrap; gap: var(--space-5);
+  padding: var(--space-3) var(--space-5);
+}
+.meta-cell { display: flex; flex-direction: column; gap: 2px; min-width: 120px; }
+.meta-label { font-size: var(--fs-sm); color: var(--text-light); }
+.meta-value { font-size: var(--fs-base); }
+
+/* ---- invalid field highlight (form validation) ---- */
+.field-invalid {
+  border-color: var(--danger) !important;
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--danger) 25%, transparent);
+  outline: none;
+}
+
+/* ---- Requests list: search bar + per-column filters + totals column ---- */
+.est-search { display: flex; gap: var(--space-3); align-items: center; }
+.est-search input[type="search"] {
+  flex: 1; min-width: 0;
+  padding: var(--space-2) var(--space-3);
+  border: 1px solid var(--border); border-radius: var(--radius-sm);
+  background: var(--bg); color: var(--text); font: inherit;
+}
+.est-archived-toggle {
+  display: inline-flex; align-items: center; gap: var(--space-2);
+  white-space: nowrap; color: var(--text-light); font-size: var(--fs-sm); cursor: pointer;
+}
+.est-date-filter {
+  display: inline-flex; align-items: center; gap: var(--space-2);
+  white-space: nowrap; color: var(--text-light); font-size: var(--fs-sm);
+}
+.est-date-filter input[type="date"] {
+  padding: var(--space-1) var(--space-2);
+  border: 1px solid var(--border); border-radius: var(--radius-sm);
+  background: var(--bg); color: var(--text); font: inherit; font-size: var(--fs-sm);
+}
+
+/* ---- Reporting dashboards ---- */
+.report-card { margin-top: 0; }
+.report-card h2 { margin-top: 0; }
+.report-subhead { margin: var(--space-5) 0 var(--space-3); font-size: var(--fs-base); color: var(--text-light); }
+
+/* Filter bar */
+.dash-filter-card { margin-top: var(--space-4); }
+.dash-filters { display: flex; flex-wrap: wrap; gap: var(--space-3); align-items: flex-end; }
+.dash-filters .field { min-width: 150px; }
+.dash-filters select, .dash-filters input[type="date"] {
+  padding: var(--space-2) var(--space-3);
+  border: 1px solid var(--border); border-radius: var(--radius-sm);
+  background: var(--bg); color: var(--text); font: inherit;
+}
+
+/* KPI summary cards (WealthOrah-inspired, MDP-toned) */
+.summary-grid {
+  display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+  gap: var(--space-4); margin: var(--space-5) 0;
+}
+.summary-card {
+  display: flex; flex-direction: column; gap: var(--space-1);
+  padding: var(--space-4) var(--space-5);
+  border: 1px solid var(--border); border-radius: var(--radius);
+  background:
+    linear-gradient(180deg, rgba(255,255,255,.04) 0%, transparent 45%),
+    linear-gradient(135deg, var(--surface), var(--surface-2));
+  box-shadow: var(--shadow-1);
+  transition: transform var(--transition), box-shadow var(--transition), opacity var(--transition);
+}
+/* Accent card (the headline Total Cost) leans on the brand tone, still restrained. */
+.summary-card-accent {
+  background:
+    linear-gradient(180deg, rgba(255,255,255,.06) 0%, transparent 45%),
+    linear-gradient(135deg, var(--primary), var(--primary-hover));
+  border-color: var(--primary-hover);
+}
+.summary-card-accent .summary-label,
+.summary-card-accent .summary-value,
+.summary-card-accent .summary-sub-label,
+.summary-card-accent .summary-sub-value { color: var(--primary-contrast); }
+.summary-card-accent .summary-sub { border-top-color: rgba(255,255,255,.25); }
+
+.summary-label { font-size: var(--fs-sm); text-transform: uppercase; letter-spacing: .4px; color: var(--text-light); }
+.summary-value { font-size: 1.7rem; font-weight: 700; color: var(--text); line-height: 1.1; }
+/* Sub-rows laid out as a 2-column grid so multi-item splits (cost, CFU) stay short rather than
+   stacking into a tall single column. Single/paired sub-rows still look natural. */
+.summary-sub {
+  display: grid; grid-template-columns: 1fr 1fr; gap: 2px var(--space-4);
+  margin-top: var(--space-2); padding-top: var(--space-2); border-top: 1px solid var(--border);
+}
+.summary-sub-row { display: flex; justify-content: space-between; gap: var(--space-2); font-size: var(--fs-sm); min-width: 0; }
+.summary-sub-row .summary-sub-label { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.summary-sub-label { color: var(--text-light); }
+.summary-sub-value { color: var(--text); font-weight: 600; }
+.summary-sub-pct { color: var(--muted); font-weight: 500; font-size: .9em; }
+.summary-card-accent .summary-sub-pct { color: var(--primary-contrast); opacity: .8; }
+
+/* Emphasis interaction: hover lifts one card and gently dims the rest. */
+.summary-grid:hover .summary-card:not(:hover) { opacity: .72; }
+.summary-card:hover { transform: translateY(-3px); box-shadow: var(--shadow-2); }
+
+/* 2-column chart grid (collapses to 1 column on narrow screens) */
+.dash-grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: var(--space-4); margin-bottom: var(--space-4); }
+.dash-grid-2 > .report-card { margin-top: 0; }
+#dash-customers { margin-top: 0; }
+@media (max-width: 720px) { .dash-grid-2 { grid-template-columns: 1fr; } }
+
+/* plain stat card (still used elsewhere) */
+.stat-row { display: flex; flex-wrap: wrap; gap: var(--space-4); margin-top: var(--space-4); }
+.stat-card {
+  flex: 1 1 160px; min-width: 150px;
+  display: flex; flex-direction: column; gap: 2px;
+  padding: var(--space-4); border: 1px solid var(--border); border-radius: var(--radius-sm);
+  background: var(--surface-2);
+}
+.stat-value { font-size: 1.6rem; font-weight: 700; color: var(--primary); line-height: 1.1; }
+.stat-label { font-size: var(--fs-sm); color: var(--text-light); }
+.stat-sub { font-size: var(--fs-sm); color: var(--muted); }
+
+/* Table pager (list + aging tables): range indicator + Prev/Next, top-right */
+.table-pager { display: flex; align-items: center; justify-content: space-between; gap: var(--space-3); flex-wrap: wrap; margin-bottom: var(--space-3); }
+.table-pager-controls { display: inline-flex; align-items: center; gap: var(--space-2); margin-left: auto; }
+.table-pager-range { font-size: var(--fs-sm); white-space: nowrap; }
+.table-pager .btn-ghost[disabled] { opacity: .45; cursor: not-allowed; }
+
+/* Mode pill (segmented control) */
+.mode-pill {
+  display: inline-flex; gap: 2px; margin: var(--space-4) 0;
+  padding: 3px; border: 1px solid var(--border); border-radius: 999px; background: var(--surface-2);
+}
+.mode-pill .pill-btn {
+  border: 0; background: transparent; color: var(--text-light);
+  padding: var(--space-2) var(--space-4); border-radius: 999px; cursor: pointer;
+  font: inherit; font-size: var(--fs-sm); font-weight: 600;
+  transition: background var(--transition), color var(--transition);
+}
+.mode-pill .pill-btn:hover:not(.active) { color: var(--text); }
+.mode-pill .pill-btn.active { background: var(--primary); color: var(--primary-contrast); }
+.mode-pill .pill-btn:focus-visible { outline: 2px solid var(--primary); outline-offset: 2px; }
+
+/* Flow analytics extras */
+.runrate-assumptions { margin: var(--space-3) 0; padding-left: var(--space-5); display: flex; flex-direction: column; gap: var(--space-2); }
+.runrate-assumptions li { color: var(--text); }
+.aging-flag {
+  display: inline-block; margin-left: var(--space-2); padding: 1px 6px; border-radius: 999px;
+  background: var(--warning); color: #fff; font-size: .7rem; font-weight: 600; text-transform: uppercase; letter-spacing: .3px;
+}
+tr.row-aging td { background: color-mix(in srgb, var(--warning) 9%, transparent); }
+
+/* hand-rolled SVG bar chart */
+.bar-chart { display: block; margin-top: var(--space-3); width: 100%; }
+.bar-chart .chart-bar { fill: var(--primary); transition: fill 120ms ease-out; }
+.bar-chart .chart-axis-label { fill: var(--text); font-size: 12px; }
+.bar-chart .chart-value-label { fill: var(--text-light); font-size: 12px; font-weight: 600; }
+
+/* hand-rolled SVG donut + legend */
+.donut-wrap { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-4) var(--space-5); margin-top: var(--space-3); }
+.donut-chart { flex: 0 0 auto; }
+.donut-chart .donut-centre { fill: var(--text); font-size: 22px; font-weight: 700; }
+.donut-legend { flex: 1 1 180px; list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 4px; min-width: 160px; }
+.donut-legend-item { display: flex; align-items: center; gap: var(--space-2); font-size: var(--fs-sm); }
+.donut-swatch { width: 11px; height: 11px; border-radius: 3px; flex: 0 0 auto; }
+.donut-legend-label { color: var(--text); flex: 1 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.donut-legend-value { color: var(--text-light); font-weight: 600; white-space: nowrap; }
+.donut-legend-pct { color: var(--muted); font-weight: 500; }
+
+/* hand-rolled SVG line / trend chart */
+.line-chart { display: block; margin-top: var(--space-3); width: 100%; }
+.line-chart .line-axis { stroke: var(--border); stroke-width: 1; }
+.line-chart .line-path { stroke: var(--primary); stroke-width: 2; }
+.line-chart .line-area { fill: var(--primary); opacity: .10; }
+.line-chart .line-dot { fill: var(--primary); }
+.line-chart .line-x-label { fill: var(--text-light); font-size: 11px; }
+.line-chart .line-value-label { fill: var(--text); font-size: 11px; font-weight: 600; }
+
+@media (prefers-reduced-motion: reduce) {
+  .summary-card, .summary-card:hover, .summary-grid:hover .summary-card:not(:hover) { transition: none; transform: none; }
+}
+
+/* ---- Audit viewer ---- */
+.audit-filters { display: flex; flex-wrap: wrap; gap: var(--space-3); align-items: flex-end; }
+.audit-filters .field { min-width: 150px; }
+.audit-filters select, .audit-filters input[type="date"] {
+  padding: var(--space-2) var(--space-3);
+  border: 1px solid var(--border); border-radius: var(--radius-sm);
+  background: var(--bg); color: var(--text); font: inherit;
+}
+.audit-when { white-space: nowrap; }
+.audit-object .muted { font-size: var(--fs-sm); }
+.audit-detail { color: var(--text-light); font-size: var(--fs-sm); word-break: break-word; }
+.est-archived-toggle input { cursor: pointer; }
+.est-list-table .col-filter-row th { padding-top: 0; padding-bottom: var(--space-2); }
+.est-list-table .col-filter {
+  width: 100%; box-sizing: border-box;
+  padding: 4px 6px; font-size: var(--fs-sm);
+  border: 1px solid var(--border); border-radius: var(--radius-sm);
+  background: var(--bg); color: var(--text); font-weight: 400;
+}
+.est-list-table .num-cell { text-align: right; white-space: nowrap; }
+
+/* ---- Stage 10: print exclusion + reduced-motion safety net ---- */
+
+/* The deliverable PDF is generated client-side by jsPDF (web/views/pdf-export.js), not by the
+   browser's print pipeline. But a user can still Ctrl+P the page, so hide the app chrome —
+   including the "Powered by Forjé" footer and the prototype banner — from any page printout
+   (task 10.5: the branding footer must not print). The jsPDF document is unaffected; it carries
+   its own footer as the customer-facing artifact. */
+@media print {
+  .proto-banner,
+  .app-header,
+  .app-nav,
+  .theme-toggle,
+  .app-footer,
+  .no-print {
+    display: none !important;
+  }
+  .app-main { padding: 0; max-width: none; }
+  body { background: #fff; color: #000; }
+}
+
+/* Reduced-motion: --transition is already zeroed in tokens.css under this query; this universal
+   rule is the belt-and-braces backstop for any hardcoded duration/animation anywhere in the app. */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/* Icon-only line-action buttons (Duplicate / Delete) are tiny glyph targets, so the global thin
+   :focus-visible outline reads weakly on them. Give them a stronger, filled focus state so keyboard
+   users can clearly see which one is focused (audit blocker #4). */
+.line-actions .btn-ghost:focus-visible {
+  outline: 2px solid var(--primary);
+  outline-offset: 1px;
+  background: var(--surface-2);
+  border-color: var(--primary);
+  color: var(--primary);
+}
+.line-actions .btn-ghost.danger:focus-visible {
+  outline-color: var(--danger);
+  border-color: var(--danger);
+  color: var(--danger);
+}
+
+/* Keyboard-accessible table rows: when a row is made focusable (role="link" + tabindex=0) its
+   focus state must be visible (audit blocker #3). Applies to catalogue rows that activate on click. */
+.data-table tbody tr[role="link"] { cursor: pointer; }
+.data-table tbody tr[role="link"]:focus-visible {
+  outline: 2px solid var(--primary);
+  outline-offset: -2px;
+  background: var(--surface-2);
+}
+
+/* Visually-hidden helper (screen-reader-only text) — used by the skip link and live region. */
+.visually-hidden {
+  position: absolute !important;
+  width: 1px; height: 1px;
+  padding: 0; margin: -1px;
+  overflow: hidden; clip: rect(0 0 0 0); clip-path: inset(50%);
+  white-space: nowrap; border: 0;
+}
+
+/* Skip link — hidden until focused, then pinned top-left above the chrome (nice-to-have #2). */
+.skip-link {
+  position: absolute; left: var(--space-3); top: -48px; z-index: 1000;
+  padding: var(--space-2) var(--space-3);
+  background: var(--primary); color: var(--primary-contrast);
+  border-radius: var(--radius-sm); text-decoration: none;
+  transition: top var(--transition);
+}
+.skip-link:focus { top: var(--space-3); }
+
+/* SVG chart transitions honour reduced motion (nice-to-have #3; the universal rule above also
+   covers these, this is an explicit guard for clarity). */
+@media (prefers-reduced-motion: reduce) {
+  svg * { transition: none !important; animation: none !important; }
+}

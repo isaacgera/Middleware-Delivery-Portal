@@ -1,0 +1,48 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Middleware Delivery Portal</title>
+    <meta
+      name="description"
+      content="Middleware Delivery Portal — centralized estimation and costing for IBM MQ, Oracle WebLogic, Axway CFT and WildFly."
+    />
+    <link rel="stylesheet" href="/styles/tokens.css" />
+    <link rel="stylesheet" href="/styles/global.css" />
+  </head>
+  <body>
+    <!-- Skip link: hidden until focused, lets keyboard users jump past the chrome to content. -->
+    <a href="#view" class="skip-link">Skip to main content</a>
+    <div class="app-shell">
+      <div class="proto-banner">Prototype (v0.1.0-proto) — dependency-free build, local SQLite</div>
+      <header class="app-header">
+        <div class="app-brand">Middleware <span>Delivery Portal</span></div>
+        <div class="app-header-right">
+          <!-- nav is rendered by app.js (session + role aware) -->
+          <nav class="app-nav" aria-label="Primary"></nav>
+          <button
+            id="theme-toggle"
+            class="theme-toggle"
+            type="button"
+            aria-label="Toggle colour theme"
+            title="Theme"
+          ></button>
+        </div>
+      </header>
+
+      <main class="app-main" id="view" tabindex="-1" aria-label="Main content"><!-- view rendered here --></main>
+
+      <footer class="app-footer">
+        <span class="app-footer-brand">Powered by Forj&eacute;</span>
+        <span class="app-footer-copy">&copy; 2026 Isaac A Gera. All rights reserved.</span>
+      </footer>
+    </div>
+
+    <!-- Polite live region: async actions (status change, delete, line add) announce here for
+         screen readers without stealing focus. Populated via announce() in app.js. -->
+    <div id="sr-live" class="visually-hidden" role="status" aria-live="polite" aria-atomic="true"></div>
+
+    <script type="module" src="/app.js"></script>
+  </body>
+</html>

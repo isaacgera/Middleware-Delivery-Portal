@@ -1,0 +1,30 @@
+# MDP repo-root ignore rules (belt-and-braces over app/.gitignore and _parked-npm-stack/.gitignore).
+
+# Secrets / env — NEVER commit
+.env
+**/.env
+*.env.local
+
+# Local SQLite databases, backups + generated docs (real data — never commit)
+**/data/
+*.db
+*.db-journal
+*.db-wal
+*.db-shm
+*.sqlite
+
+# Test-runner sidecar (transient)
+**/.last-test-summary.txt
+
+# Dependencies (the parked npm/Prisma track must NOT carry node_modules into the repo)
+**/node_modules/
+
+# Build output (parked track, if ever built)
+**/dist/
+**/build/
+
+# OS / editor cruft
+.DS_Store
+Thumbs.db
+*.log
+.vscode/

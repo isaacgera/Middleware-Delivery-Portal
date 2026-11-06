@@ -1,0 +1,42 @@
+# Dependencies
+node_modules/
+.npm/
+
+# Build output
+dist/
+build/
+*.tsbuildinfo
+
+# Environment / secrets — never commit
+.env
+.env.*
+!.env.example
+
+# Local database (SQLite prototype store) — not committed
+*.db
+*.db-journal
+*.sqlite
+prisma/dev.db*
+
+# Generated PDFs (local prototype doc store)
+generated-docs/
+storage/
+
+# Prisma generated client
+packages/db/generated/
+.prisma/
+
+# Editor / OS
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+npm-debug.log*
+logs/
+
+# Test / coverage
+coverage/
+.vitest/

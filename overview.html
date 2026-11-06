@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Middleware Delivery Portal — Overview</title>
+<style>
+  :root{--bg:#f6f7f9;--surface:#fff;--border:#d9dde3;--text:#1a2430;--muted:#5a6675;--primary:#0a66c2;}
+  @media (prefers-color-scheme:dark){:root{--bg:#12171e;--surface:#1a212b;--border:#2e3844;--text:#e8edf3;--muted:#a9b4c0;--primary:#4a9eea;}}
+  *{box-sizing:border-box}
+  body{font-family:'Segoe UI',system-ui,-apple-system,sans-serif;background:var(--bg);color:var(--text);line-height:1.6;max-width:860px;margin:0 auto;padding:1.5rem}
+  h1{color:var(--primary);font-size:1.7rem;margin-bottom:.2rem}
+  h2{font-size:1.2rem;margin:1.8rem 0 .6rem}
+  .sub{color:var(--muted);margin-bottom:1.2rem}
+  .lead{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:1rem 1.2rem;box-shadow:0 1px 3px rgba(16,24,40,.08)}
+  .grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:1rem;margin:1rem 0}
+  .card{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:1rem 1.2rem;box-shadow:0 1px 3px rgba(16,24,40,.08)}
+  .card h3{margin:0 0 .4rem;font-size:1rem;color:var(--primary)}
+  .card p{margin:0;color:var(--muted);font-size:.9rem}
+  .pill{display:inline-block;font-size:.72rem;font-weight:600;color:var(--primary);border:1px solid var(--primary);border-radius:999px;padding:1px 8px;margin-left:.4rem;vertical-align:middle}
+  ul{padding-left:1.2rem}
+  li{margin:.3rem 0;color:var(--muted)}
+  footer{margin-top:2rem;padding-top:1rem;border-top:1px solid var(--border);text-align:center;color:var(--muted);font-size:.75rem}
+  footer .brand{color:var(--primary);font-weight:600;display:block}
+</style>
+</head>
+<body>
+  <h1>Middleware Delivery Portal <span class="pill">MDP</span></h1>
+  <div class="sub">Phase 1 — Estimation &amp; Planning. A single source of truth for middleware effort &amp; cost estimates.</div>
+
+  <div class="lead">
+    <p style="margin-top:0;">MDP replaces the scattered Excel <strong>“Menu Cards”</strong> used to estimate middleware work
+    with one governed, auditable web app. A team of a few delivery managers and an administrator build
+    <strong>Requests</strong> (estimates) for <strong>IBM MQ</strong>, <strong>Oracle WebLogic</strong>,
+    <strong>Axway CFT</strong> and <strong>WildFly</strong> — pulling service figures from an approved,
+    version-controlled Menu Card, and producing clean customer-ready PDFs. Every figure is traceable,
+    every change is logged, and the numbers can’t drift because each line <em>snapshots</em> the Menu
+    Card value at the moment it’s added.</p>
+  </div>
+
+  <h2>What it does</h2>
+  <div class="grid">
+    <div class="card"><h3>Versioned Menu Cards</h3><p>Import the approved Menu Card workbook; exactly one version is <strong>Active</strong> at a time. Older versions are archived, never lost.</p></div>
+    <div class="card"><h3>Product Catalogue</h3><p>Browse the active card’s services by component and size, with search and a detail view of every figure.</p></div>
+    <div class="card"><h3>Requests &amp; line items</h3><p>Build an estimate from catalogue services, scoped to its component + size, with live totals as you go.</p></div>
+    <div class="card"><h3>Deterministic costing</h3><p>No guesswork: a line is its snapshot × quantity, totals are the sum. Money is exact (no rounding drift).</p></div>
+    <div class="card"><h3>Status workflow</h3><p>New → Pending → Approved → In&nbsp;Progress → Done, plus Archive and Cancel. Any status, any time, with guards where they matter.</p></div>
+    <div class="card"><h3>Customer PDFs</h3><p>Generate a clean, branded estimate PDF per request — download on desktop, share on mobile.</p></div>
+    <div class="card"><h3>Dashboards</h3><p>Volume, value and breakdowns by product / CFU / size / customer, with filters and charts.</p></div>
+    <div class="card"><h3>Flow analytics</h3><p>Throughput, cycle time, aging and an honest run-rate projection — reconstructed from real history.</p></div>
+    <div class="card"><h3>Full audit trail</h3><p>Every login, import, create, change, delete and export is recorded — append-only and tamper-evident.</p></div>
+  </div>
+
+  <h2>Who uses it</h2>
+  <ul>
+    <li><strong>Delivery Managers</strong> — create and manage requests, browse the catalogue, generate PDFs, view dashboards &amp; their own history.</li>
+    <li><strong>Administrators</strong> — everything a Delivery Manager can do, plus importing/activating Menu Cards and seeing the full audit log across all users.</li>
+  </ul>
+
+  <h2>How it’s built</h2>
+  <ul>
+    <li><strong>Server-backed, multi-user</strong> (3–5 concurrent) with a real relational database — a single source of truth, not a per-person spreadsheet.</li>
+    <li><strong>Role-based access</strong> with secure sessions and hashed passwords; an Entra ID sign-in seam is planned.</li>
+    <li><strong>Local-first &amp; private</strong> — data stays on the BT server; nothing is sent to any third party.</li>
+    <li><strong>Dependency-free</strong> — runs on the Node.js runtime alone, suiting a locked-down environment; light/dark themes and keyboard/screen-reader accessibility built in.</li>
+  </ul>
+
+  <footer>
+    <span class="brand">Powered by Forjé</span>
+    © 2026 Isaac A Gera. All rights reserved.
+  </footer>
+</body>
+</html>

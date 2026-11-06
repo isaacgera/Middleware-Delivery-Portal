@@ -1,0 +1,16 @@
+# Secrets / env
+.env
+
+# Local SQLite database + generated docs (prototype data)
+data/
+*.db
+*.db-journal
+*.sqlite
+
+# OS / editor
+.DS_Store
+Thumbs.db
+*.log
+
+# Test runner sidecar (transient; written by run-tests.mjs)
+.last-test-summary.txt

@@ -1,0 +1,205 @@
+// Middleware Delivery Portal (MDP) — Prisma schema
+//
+// Provider is switched by environment:
+//   - Dev / prototype: SQLite (file:./dev.db)  <- current
+//   - Production:       PostgreSQL or SQL Server (change `provider` + DATABASE_URL at deploy)
+//
+// PORTABILITY NOTES (design §8 — "SQLite-green != production-green"):
+//   * SQLite has no native enum type, so enum-like fields are stored as String and validated
+//     by the shared Zod enums (@mdp/shared). On Postgres/SQL Server these can become real enums.
+//   * SQLite has limited Decimal support; Prisma maps Decimal to a numeric type. Monetary and
+//     effort values use Decimal here so precision carries to the production DB. Round only at
+//     display/export, never in storage.
+//   * Partial/filtered unique indexes are NOT modelled here (not portable via Prisma). The
+//     "exactly one ACTIVE MenuCardVersion" invariant is enforced by a serialized activation
+//     transaction in the API (design §3.1 / §9), not a DB index.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+// ---------------------------------------------------------------------------
+// User — credentials (hashed), role, profile.
+// role: "DELIVERY_MANAGER" | "ADMINISTRATOR" (Administrator is a superset).
+// ---------------------------------------------------------------------------
+model User {
+  id           String    @id @default(uuid())
+  username     String    @unique
+  passwordHash String
+  displayName  String
+  email        String?
+  role         String // Role enum (validated in app)
+  isActive     Boolean   @default(true)
+  createdAt    DateTime  @default(now())
+  lastLoginAt  DateTime?
+
+  // relations
+  uploadedMenuCards MenuCardVersion[]   @relation("UploadedBy")
+  createdEstimates  Estimate[]          @relation("CreatedBy")
+  auditEvents       AuditEvent[]
+  generatedDocs     GeneratedDocument[] @relation("GeneratedBy")
+
+  @@index([role])
+}
+
+// ---------------------------------------------------------------------------
+// MenuCardVersion — FY-versioned container; exactly one ACTIVE at a time
+// (enforced by transaction, not index). Immutable once ACTIVE.
+// ---------------------------------------------------------------------------
+model MenuCardVersion {
+  id             String   @id @default(uuid())
+  label          String // e.g. "V5"
+  financialYear  String // e.g. "FY27"
+  sourceFilename String
+  status         String   @default("DRAFT") // MenuCardStatus enum
+  blendedUspRate Decimal
+  overheadPct    Decimal
+  peopleDayRate  Decimal
+  importSummary  String? // JSON string: row counts, warnings
+  uploadedById   String
+  uploadedBy     User     @relation("UploadedBy", fields: [uploadedById], references: [id])
+  uploadedAt     DateTime @default(now())
+
+  variants  ServiceVariant[]
+  estimates Estimate[]
+
+  @@index([status])
+  @@index([financialYear])
+}
+
+// ---------------------------------------------------------------------------
+// ServiceVariant — a catalogue line under a MenuCardVersion.
+// Natural key within a version: (menuCardVersionId, component, size, description).
+// Stores the SIX values exactly as imported — never recomputed.
+// ---------------------------------------------------------------------------
+model ServiceVariant {
+  id                 String  @id @default(uuid())
+  menuCardVersionId  String
+  menuCardVersion    MenuCardVersion @relation(fields: [menuCardVersionId], references: [id], onDelete: Cascade)
+  component          String // Component enum: MQ | WLS | CFT | WILDFLY
+  size               String // TO/XS/S/M/L/XL/XXL (data-driven, not fixed)
+  changeCategory     String
+  description        String
+  scope              String?
+  assumptions        String?
+  exclusions         String?
+  // the six stored values (as-imported)
+  pd                 Decimal
+  usp                Decimal
+  atom               Decimal
+  uspCost            Decimal
+  overheadCost       Decimal
+  totalCost          Decimal
+  currentPartnerCost String? // free text / range / "NA"
+  effortPhases       String? // JSON string: per-component phase columns, for reference
+  rowIndex           Int // source row, for traceability
+
+  lines EstimateLine[]
+
+  @@unique([menuCardVersionId, component, size, description])
+  @@index([menuCardVersionId, component])
+}
+
+// ---------------------------------------------------------------------------
+// Estimate (header) — pins the MenuCardVersion it was built on.
+// estimateNumber = "ARCH-XXXX" (auto-suggested, editable, unique).
+// rowVersion = optimistic concurrency (bumped on header or line change).
+// ---------------------------------------------------------------------------
+model Estimate {
+  id                String   @id @default(uuid())
+  estimateNumber    String   @unique
+  name              String
+  customerName      String
+  opportunityRef    String?
+  description       String?
+  version           Int      @default(1)
+  status            String   @default("DRAFT") // EstimateStatus enum
+  menuCardVersionId String
+  menuCardVersion   MenuCardVersion @relation(fields: [menuCardVersionId], references: [id])
+  createdById       String
+  createdBy         User     @relation("CreatedBy", fields: [createdById], references: [id])
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+  rowVersion        Int      @default(0)
+
+  lines     EstimateLine[]
+  documents GeneratedDocument[]
+
+  @@index([status])
+  @@index([customerName])
+  @@index([createdById])
+  @@index([createdAt])
+}
+
+// ---------------------------------------------------------------------------
+// EstimateLine — references a ServiceVariant for provenance, but carries a
+// SNAPSHOT of the six values at add-time (so later Menu Card changes never
+// alter an existing estimate). Denormalised component/size/description for
+// display stability.
+// ---------------------------------------------------------------------------
+model EstimateLine {
+  id               String  @id @default(uuid())
+  estimateId       String
+  estimate         Estimate @relation(fields: [estimateId], references: [id], onDelete: Cascade)
+  serviceVariantId String
+  serviceVariant   ServiceVariant @relation(fields: [serviceVariantId], references: [id])
+  // denormalised for display stability
+  component        String
+  size             String
+  description      String
+  quantity         Decimal
+  // snapshot of the six values at add-time
+  snapPd           Decimal
+  snapUsp          Decimal
+  snapAtom         Decimal
+  snapUspCost      Decimal
+  snapOverheadCost Decimal
+  snapTotalCost    Decimal
+  notes            String?
+  sortOrder        Int     @default(0)
+
+  @@index([estimateId])
+}
+
+// ---------------------------------------------------------------------------
+// AuditEvent — append-only. No update/delete paths exposed in the app.
+// ---------------------------------------------------------------------------
+model AuditEvent {
+  id         String   @id @default(uuid())
+  userId     String?
+  user       User?    @relation(fields: [userId], references: [id])
+  timestamp  DateTime @default(now())
+  action     String // AuditAction enum
+  objectType String
+  objectId   String
+  detail     String? // JSON string
+
+  @@index([action])
+  @@index([timestamp])
+  @@index([userId])
+}
+
+// ---------------------------------------------------------------------------
+// GeneratedDocument — metadata + filesystem path for exported PDFs
+// (binaries live on disk, not in the DB).
+// ---------------------------------------------------------------------------
+model GeneratedDocument {
+  id                String   @id @default(uuid())
+  estimateId        String
+  estimate          Estimate @relation(fields: [estimateId], references: [id], onDelete: Cascade)
+  format            String   @default("PDF") // ExportFormat enum
+  filePath          String
+  fileName          String
+  menuCardVersionId String? // provenance of the figures at generation time
+  generatedById     String
+  generatedBy       User     @relation("GeneratedBy", fields: [generatedById], references: [id])
+  generatedAt       DateTime @default(now())
+  sizeBytes         Int      @default(0)
+
+  @@index([estimateId])
+}
