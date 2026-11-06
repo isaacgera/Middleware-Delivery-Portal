@@ -5,6 +5,47 @@ Running log of work across sessions. Newest entries at the top. Companion to the
 
 ---
 
+## 2026-11-06 (later x5) — Feature 9.11: request import pipeline (built) + FIXED the OneDrive/git gc loop
+
+### ⚠️ Important fix — OneDrive vs git auto-gc (read this before future git work)
+Twice this session the terminal was hijacked by a loop: `Deletion of directory '.git/objects/XX'
+failed. Should I try again? (y/n)` walking 00…ff. **Cause:** git's **automatic garbage collection**
+(`git gc --auto`, fires after commits/pushes) tries to prune loose objects, and **OneDrive locks
+them** → endless retry prompt that eats all terminal input. `git fsck` confirmed the repo was never
+damaged (declining = nothing deleted; the commit/push always completed *before* the gc step).
+**Fix applied (no relocation — repo stays in OneDrive with the other projects per Isaac):**
+```
+git config gc.auto 0
+git config gc.autoDetach false
+```
+Repo-local, disables the pruning that fights OneDrive. Verified: subsequent commit (`c4d84ea`) +
+`git push all` ran clean, no prompt. Trade-off: loose objects aren't auto-pruned (`.git` grows
+slightly — negligible); if ever needed, run a manual `git gc` deliberately with OneDrive paused.
+**Do NOT re-enable gc.auto.**
+
+### Feature 9.11 — request import pipeline (code-complete, awaiting browser sign-off)
+Built as a Quick Spec. **Decisions (Isaac):** headers-only (export has no line items); skip duplicate
+JIRAs (report, never overwrite/abort); preserve exported status (unknown→NEW); attribute to the
+**importing admin** (export has no creator field — the only truthful option), audited imported;
+preview-then-commit; admin-only.
+- **Backend:** `server/repo/request-import.js` — `parseEnvelope` (validates `type:mdp.requests` v1),
+  `previewImport` (classifies importable/duplicate/error, writes nothing; catches in-file dups too),
+  `commitImport` (creates header-only via `createEstimate`, sets preserved status directly to bypass
+  the changeStatus transition-guards on a fresh record, pins active Menu Card). Admin-only
+  `POST /api/estimates/import?mode=preview|commit`; one `ESTIMATE_CREATE` audit per created row with
+  `detail:{imported:true,sourceJira}`.
+- **Frontend:** admin-only **Import…** button on the Requests list head → modal (reuses `trapFocus`):
+  file-pick → POST preview → classified preview card (importable/skipped/errors + active-card note)
+  → "Import N" → POST commit → summary + list refresh. Small CSS for the preview list.
+- **Tests:** `test/request-import.test.mjs` (+6). **Suite 44 → 50, all green.** `node --check` clean.
+- **Committed:** backend `cc217b8` (pushed to all 3 remotes), frontend `c4d84ea`.
+
+### Status
+**9.11 code-complete, awaiting Isaac browser sign-off** (serve sample DB → Requests → Import… →
+load a JSON export produced by Export ▾ → JSON → preview → import). Independent of BT deployment.
+
+---
+
 ## 2026-11-06 (later x4) — pushed the session's work to all 3 remotes + userguide install section
 
 - **Userguide:** added a **"1a. Installing MDP as an app"** end-user section (commit `a8a3f89`) —
