@@ -24,6 +24,12 @@ Changed the default order from newest-first (createdAt) to **JIRA/ARCH reference
   with a top-right **✕**, plus **Cancel** / **Save as DRAFT**; closes on ✕/Cancel/Escape/backdrop;
   on save it closes, shows the "Created…" confirmation on the page, and refreshes the versions list.
 
+### Home page — nothing lined up (idea captured)
+Isaac asked what's planned for the **Home** tab. Answer: nothing — it's intentionally a thin
+landing/health page (greeting + API-connectivity card, `renderDashboard()`). Logged a *future-build*
+note in SPEC-tasks for an optional richer Home (KPIs / quick links / recent requests / active-card
+banner) if ever wanted; not scheduled.
+
 ### Bug fixed: modal Cancel/Save were dead
 Root cause: `menucards.js` used `trapFocus` but it was **only defined in `estimates.js`** (never
 imported) → `ReferenceError` aborted the modal wiring, so the form rendered but nothing was wired.
