@@ -5,6 +5,51 @@ Running log of work across sessions. Newest entries at the top. Companion to the
 
 ---
 
+## 2026-11-06 — Installability (install-only PWA, NOT offline) + git repo init (pre-push)
+
+Picking up the BT-side deployment thread. Before pushing to GitLab, Isaac asked for MDP to be
+**installable**. Added it deliberately as **install-only, not offline-first** — MDP is a shared-data
+server-backed app (SPEC-design §1 "not local-first, not a PWA"), so caching data would risk stale
+estimates across users.
+
+### What was added
+- **`web/manifest.webmanifest`** — name/short_name/description, `display: standalone`,
+  `theme_color #0a66c2`, `background_color #f6f7f9`, the four existing icons (192/512 + maskable).
+- **`web/sw.js`** — a deliberately conservative service worker: **never caches or intercepts
+  `/api/…`** (always live); static shell is **network-first** (fresh when online, cached copy only
+  as a fallback on a network blip); non-GET + cross-origin bypass entirely. `CACHE_NAME = mdp-shell-v1`
+  (bump on front-end release). It exists to meet the install bar, not to run offline.
+- **`index.html`** — `<link rel="manifest">`, `theme-color`, icon + apple-touch-icon links.
+- **`app.js`** — fire-and-forget `navigator.serviceWorker.register('/sw.js')` on load (non-fatal if
+  unsupported; needs a secure context — localhost in dev, HTTPS in prod).
+- **`server/static.js`** — added the `.webmanifest` MIME type (`application/manifest+json`).
+- Copied the four `icon-*.png` from `app/` into `app/web/` (must be under the served web root).
+- **SPEC-requirements NFR9** updated to record the install-only (not-offline) stance so it's not a
+  future contradiction.
+
+### Verified
+Test suite still **38/38**; manifest JSON validates; `node --check` clean on app.js / sw.js /
+static.js. (Install prompt + the SW serving behaviour are a browser check for Isaac once served
+over http://localhost or HTTPS — a file:// open won't register a SW.)
+
+### Git repo initialised (local) — ready to push
+- `git init` in the MDP root; added a **root `.gitignore`** (belt-and-braces over app/ + parked
+  stack): excludes `.env`, `**/data/`, `*.db*`, `**/node_modules/`, `.last-test-summary.txt`, build
+  output, OS cruft.
+- **Dry-run verified clean**: no `.env`, no `.db`, no `node_modules` in the tracked set — only
+  `.env.example` templates, source, tests, docs, SPEC trilogy, CI, and the vendored jsPDF.
+- **Initial commit `9b8f212`** on branch `master`, 112 files, working tree clean. *(NOTE: this
+  commit predates the installability files above — a follow-up commit will include them before push.)*
+
+### Remaining (unchanged, BT-side) + the push
+- **Push:** create empty projects on **BT Team GitLab**, **Personal GitLab**, and **GitHub** (no
+  auto-README), add remotes, push `main`. Needs Isaac's credentials/SSO — Forjé provides the exact
+  commands; Isaac runs them. (BT Zscaler may force SSH over HTTPS for git — fall back to SSH if the
+  HTTPS push throws a TLS error.)
+- Then: 11.8 provision → 11.5 deploy+TLS → 12.2 e2e → 12.4 sign-off → Built. See DEPLOYMENT.md §0.
+
+---
+
 ## 2026-11-05 (later still) — Stage 11 (deploy prep) + Stage 12 (spec review + user docs) — all session-completable parts done
 
 Picked up Stage 11 → Stage 12. Everything that can be done **before** the BT deployment is now

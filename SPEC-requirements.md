@@ -313,7 +313,11 @@ independent effort calculation · admin "regenerate Menu Card" tooling.
   round-trip against the real dev DB passed losslessly (see DEPLOYMENT.md §5). Wiring the
   scheduled task + off-box copy on the deployment server is the remaining operational step.
 - **NFR8 Browsers:** Edge and Chrome.
-- **NFR9 Responsive design:** desktop-first with tablet support (not a mobile/PWA app).
+- **NFR9 Responsive design:** desktop-first with tablet support. **Installable (2026-11-05):** MDP
+  ships a web manifest + a service worker so it can be **installed as a desktop/taskbar window**
+  — but it is deliberately **NOT offline-first**. As a shared-data, server-backed app, the service
+  worker never caches `/api` data (network-first shell only), so users always see the live source
+  of truth. "Installable convenience, not a local-first/offline PWA."
 - **NFR10 Data safety:** validate on import; never corrupt/lose estimate data; snapshotting
   preserves historical estimate integrity across Menu Card changes.
 - **NFR11 Secrets discipline:** no credentials/keys committed; configuration (DB connection,

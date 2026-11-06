@@ -10,6 +10,11 @@
     />
     <link rel="stylesheet" href="/styles/tokens.css" />
     <link rel="stylesheet" href="/styles/global.css" />
+    <!-- Installability (not offline-first — see web/sw.js). Lets MDP install as a desktop window. -->
+    <link rel="manifest" href="/manifest.webmanifest" />
+    <meta name="theme-color" content="#0a66c2" />
+    <link rel="icon" type="image/png" sizes="192x192" href="/icon-192.png" />
+    <link rel="apple-touch-icon" href="/icon-192.png" />
   </head>
   <body>
     <!-- Skip link: hidden until focused, lets keyboard users jump past the chrome to content. -->

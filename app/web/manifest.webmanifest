@@ -1,0 +1,16 @@
+{
+  "name": "Middleware Delivery Portal",
+  "short_name": "MDP",
+  "description": "Middleware estimation & costing — single source of truth for IBM MQ, Oracle WebLogic, Axway CFT and WildFly.",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "theme_color": "#0a66c2",
+  "background_color": "#f6f7f9",
+  "icons": [
+    { "src": "/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "/icon-maskable-192.png", "sizes": "192x192", "type": "image/png", "purpose": "maskable" },
+    { "src": "/icon-maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ]
+}

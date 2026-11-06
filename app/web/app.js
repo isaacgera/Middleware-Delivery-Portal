@@ -236,3 +236,16 @@ initTheme();
   }
   router();
 })();
+
+/**
+ * Register the service worker — this is what makes MDP installable (a registered SW + the
+ * manifest meet the install bar). It is INSTALLABILITY-ONLY, not offline-first: the worker never
+ * caches /api data (see web/sw.js). Fire-and-forget; a failure or an unsupporting browser must
+ * not affect the app. Served over http://localhost in dev and HTTPS in prod (SW needs a secure
+ * context — localhost counts).
+ */
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('/sw.js').catch(() => { /* non-fatal: app works without it */ });
+  });
+}
