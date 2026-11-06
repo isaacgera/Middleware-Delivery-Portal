@@ -692,3 +692,13 @@ tr.row-aging td { background: color-mix(in srgb, var(--warning) 9%, transparent)
 .imp-list .imp-ok { color: var(--success); }
 .imp-list .imp-dup { color: var(--warning); }
 .imp-list .imp-err { color: var(--danger); }
+
+/* ---- a11y polish (deferred Stage-10 should-fixes) ---- */
+/* On touch / small screens, grow the icon-only line-action buttons toward the ~44x44px tap target
+   (WCAG 2.5.5). On desktop/mouse they stay compact. */
+@media (max-width: 640px), (pointer: coarse) {
+  .line-actions .btn-ghost {
+    min-width: 40px; min-height: 40px;
+    display: inline-flex; align-items: center; justify-content: center;
+  }
+}

@@ -54,10 +54,10 @@ export async function renderCatalogue(view) {
         </div>
       </div>
       <div class="cat-controls-right">
-        <div class="field">
+        <label class="field">
           <span>Search</span>
           <input id="cat-q" type="text" placeholder="Search all columns…" />
-        </div>
+        </label>
         <div class="cat-controls-meta">
           <span id="cat-count" class="muted"></span>
           <button type="button" class="btn-ghost" id="cat-clear">Clear filters</button>
@@ -136,7 +136,8 @@ function buildSizePills(view) {
 }
 
 function pill(label, active, kind, val) {
-  return `<button type="button" class="pill${active ? ' active' : ''}" data-pill="${kind}" data-val="${esc(val)}">${esc(label)}</button>`;
+  // aria-pressed conveys the toggle state to screen readers (the .active class is visual only).
+  return `<button type="button" class="pill${active ? ' active' : ''}" aria-pressed="${active ? 'true' : 'false'}" data-pill="${kind}" data-val="${esc(val)}">${esc(label)}</button>`;
 }
 
 // ---- data ----
