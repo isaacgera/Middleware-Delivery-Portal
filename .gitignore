@@ -16,6 +16,10 @@
 # Test-runner sidecar (transient)
 **/.last-test-summary.txt
 
+# Downloaded request/dashboard exports (test artifacts from the export/import features)
+mdp-requests-*.json
+mdp-dashboard-*.json
+
 # Dependencies (the parked npm/Prisma track must NOT carry node_modules into the repo)
 **/node_modules/
 

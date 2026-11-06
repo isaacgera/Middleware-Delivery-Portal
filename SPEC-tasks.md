@@ -3,7 +3,7 @@
 - **Project:** Middleware Delivery Portal (MDP)
 - **Phase:** Phase 1 — Estimation & Planning
 - **Companion docs:** `SPEC-requirements.md`, `SPEC-design.md`
-- **Last updated:** 2026-11-05 (Durable **`node --test`** suite added — 38 tests / 6 files, all passing — closing the long-deferred test tasks **0.7 / 1.6 / 5.8 / 7.6**. Run `node app/run-tests.mjs`; see `app/test/README.md`. Remaining pre-Stage-10 items are all intentional future work: **2.7** Entra ID (→ Stage 11) and **9.11** request import (tracked). Next: Stage 10 NFR/a11y.)
+- **Last updated:** 2026-11-06 (Stages 0–10 done; Stage 11 repo+CI done & green on 3 remotes; both backlog features **9.12** on-screen Menu Card creation and **9.11** request import **built + browser-verified**; modal focus-trap + all deferred a11y should-fixes cleared; install-only PWA verified; user install guide added. Test suite **50 tests / 8 files, all passing** (`node app/run-tests.mjs`). **Remaining = BT-side deployment only** (11.5 TLS deploy + rest of 11.8 provisioning) → 12.2 e2e → 12.4 Isaac sign-off → **Built**. Also open: **2.7** Entra ID. **Ops note:** repo lives in OneDrive — `gc.auto 0` is set to stop the auto-gc/OneDrive-lock loop; do NOT re-enable it.)
 
 Implementation plan for Phase 1, sequenced so each stage leaves the app runnable and testable.
 Checkboxes track progress. **Nothing is "Built" until Isaac verifies and signs off** (status
