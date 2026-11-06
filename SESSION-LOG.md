@@ -38,8 +38,13 @@ independently. **Browser sign-off pending from Isaac** (serve locally, Menu Card
 → add rows, watch costs compute, save DRAFT, activate). Import path untouched.
 
 ### Status
-**9.12 code-complete, awaiting browser sign-off.** Independent of the BT deployment. Tracked future
-still open: 9.11 import pipeline; Entra ID 2.7; lower-value a11y polish.
+**9.12 DONE — browser-verified by Isaac (2026-11-06):** created a Menu Card on screen via the form
+and activated it against the sample DB; costs computed correctly, DRAFT→ACTIVE worked. Independent
+of the BT deployment. Tracked future still open: 9.11 import pipeline; Entra ID 2.7; lower-value
+a11y polish.
+> Note: the sample DB (`mdp-sample.db`) now has Isaac's test-created card as ACTIVE (the original
+> seeded card demoted to ARCHIVED). Harmless — it's disposable test data; re-run `seed-sample-data.mjs`
+> to reset if a pristine sample is ever wanted.
 
 ---
 
